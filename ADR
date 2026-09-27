@@ -1,31 +1,36 @@
-# 🧭 Inventário do Laboratório — Registro de Decisões de Arquitetura (ADR)
+# ADR — Inventário do Laboratório
 
-> Decisões técnicas do app, com as alternativas avaliadas e as consequências que o time aceitou. Complementa o [PRD](README.md).
+> Registro das decisões de arquitetura do app: o que foi decidido, o que foi descartado e quais custos o time aceitou.
+> Requisitos do produto: ver o [README](../README.md).
 
 | Campo | Valor |
 |---|---|
-| **Versão** | 1.0 |
 | **Data** | 27/09/2026 |
 | **Responsável** | _a definir_ |
 
 ---
 
-## 📑 Sumário
+## Sumário
 
-- [Índice de decisões](#índice-de-decisões)
+- [Decisões registradas](#decisões-registradas)
 - [ADR-001 — Modelagem dos dados no Firestore](#adr-001--modelagem-dos-dados-no-firestore)
 - [ADR-002 — Persistência local e sessão do usuário](#adr-002--persistência-local-e-sessão-do-usuário)
 - [ADR-003 — Integração com a LLM e gestão de chaves](#adr-003--integração-com-a-llm-e-gestão-de-chaves)
 
 ---
 
-## Índice de decisões
+## Decisões registradas
 
-| ID | Decisão | Status |
-|---|---|---|
-| [ADR-001](#adr-001--modelagem-dos-dados-no-firestore) | Coleções raiz no Firestore, histórico em coleção própria e dados desnormalizados para leitura | ✅ Aceita |
-| [ADR-002](#adr-002--persistência-local-e-sessão-do-usuário) | Firebase JS SDK com sessão em AsyncStorage e cache local em expo-sqlite | ✅ Aceita |
-| [ADR-003](#adr-003--integração-com-a-llm-e-gestão-de-chaves) | Gemini chamado direto do app com saída JSON estruturada e chave em variável de ambiente | ✅ Aceita |
+| ID | Tema | Decisão | Status |
+|---|---|---|---|
+| [ADR-001](#adr-001--modelagem-dos-dados-no-firestore) | Modelagem dos dados | Quatro coleções na raiz do Firestore, histórico em coleção própria e campos copiados para leitura rápida | ✅ Aceita |
+| [ADR-002](#adr-002--persistência-local-e-sessão-do-usuário) | Persistência local e sessão | Sessão salva no AsyncStorage e cache de leitura em SQLite; gravações sempre no Firestore | ✅ Aceita |
+| [ADR-003](#adr-003--integração-com-a-llm-e-gestão-de-chaves) | IA e chaves de API | Gemini chamado direto do app, com resposta em JSON e chave em `.env` fora do Git | ✅ Aceita |
+
+Cada decisão segue a mesma ordem: **contexto → decisão → alternativas consideradas → consequências assumidas**.
+
+> [!NOTE]
+> Todas as decisões partem de uma limitação comum: o app roda no **Expo Go**, que só executa JavaScript e os módulos nativos já incluídos nele. Bibliotecas com código nativo próprio ficam de fora.
 
 ---
 
@@ -33,75 +38,87 @@
 
 **Status:** ✅ Aceita · **Data:** 27/09/2026
 
+> **Em uma frase:** quatro coleções na raiz, com o histórico de movimentações separado dos itens e alguns campos copiados para que cada lista custe uma única consulta.
+
 ### Contexto
 
-O app precisa guardar usuários, locais, itens e toda a movimentação de cada item (cadastro, edição, retirada, devolução, consumo). As consultas mais frequentes são:
-
-1. Listar e buscar itens por nome, tipo e local (RF22).
-2. Ver o histórico de **um** item (RF23).
-3. Listar **todos** os empréstimos atrasados e os **meus** empréstimos, cruzando itens (RF17).
-4. Listar itens vencendo ou vencidos (RF18–RF19).
-
-O Firestore é um banco de documentos: não tem JOIN, não faz busca por "contém" e cobra por documento lido (cota gratuita de 50.000 leituras/dia — RNF27). Uma retirada precisa alterar o saldo do item **e** registrar a movimentação sem deixar os dois inconsistentes.
+- O app guarda usuários, locais, itens e toda a movimentação de cada item: cadastro, edição, retirada, devolução, consumo e exclusão.
+- As consultas mais usadas são: buscar itens, ver o histórico de um item, listar empréstimos atrasados de todos os itens e listar itens vencendo.
+- O Firestore não faz JOIN, não busca por trecho de texto e cobra por documento lido. A cota gratuita é de 50.000 leituras por dia.
+- Uma retirada altera o saldo do item e cria um registro de histórico. As duas coisas precisam acontecer juntas ou nenhuma.
 
 ### Decisão
 
-Usar **quatro coleções na raiz**, com o histórico em coleção própria e campos **desnormalizados** para evitar leituras extras:
+O banco terá quatro coleções, todas na raiz:
 
-```
+| Coleção | O que guarda | Campos principais |
+|---|---|---|
+| `usuarios` | Uma pessoa por documento, com o id do Firebase Auth | `nome`, `email`, `perfil` (admin, tecnico, estudante), `ativo` |
+| `locais` | Cada prateleira física | `sala`, `armario`, `prateleira`, `rotulo` ("Sala 2 › Armário 3 › Prateleira B") |
+| `itens` | Reagentes, vidraria e equipamentos | `tipo`, `nome`, `concentracao`, `fabricante`, `lote`, `validade`, `quantidadeTotal`, `quantidadeDisponivel`, `localId`, **`localRotulo`**, `origemIA`, `atualizadoEm`, `excluidoEm` |
+| `movimentacoes` | Cada evento de cada item | `itemId`, **`itemNome`**, `tipo`, `quantidade`, `usuarioId`, **`usuarioNome`**, `dataPrevista`, `encerradaEm`, `criadoEm` |
+
+Os campos em **negrito** são cópias feitas de propósito, para que a lista mostre o local ou o nome sem ler outro documento.
+
+<details>
+<summary>Estrutura completa das coleções</summary>
+
+```text
 usuarios/{uid}
-  nome, email, perfil (admin|tecnico|estudante), ativo, criadoEm
+  nome, email, perfil, ativo, criadoEm
 
 locais/{localId}
-  sala, armario, prateleira,
-  rotulo            ← "Sala 2 › Armário 3 › Prateleira B" (desnormalizado)
+  sala, armario, prateleira, rotulo
 
 itens/{itemId}
-  tipo (reagente|vidraria|equipamento), nome, concentracao, fabricante, lote,
-  validade (Timestamp | null), unidade,
+  tipo, nome, concentracao, fabricante, lote, validade, unidade,
   quantidadeTotal, quantidadeDisponivel, estoqueMinimo,
-  localId, localRotulo  ← cópia do rótulo do local
-  origemIA (bool)       ← campos vieram de sugestão confirmada da IA
-  criadoPor, criadoEm, atualizadoEm,
-  excluidoEm (Timestamp | null)
+  localId, localRotulo, origemIA,
+  criadoPor, criadoEm, atualizadoEm, excluidoEm
 
 movimentacoes/{movId}
-  itemId, itemNome      ← cópia do nome do item
-  tipo (cadastro|edicao|retirada|devolucao|consumo|exclusao),
+  itemId, itemNome,
+  tipo (cadastro | edicao | retirada | devolucao | consumo | exclusao),
   quantidade, usuarioId, usuarioNome,
-  dataPrevista (só retirada), encerradaEm (só retirada),
-  retiradaId (só devolução), criadoEm
+  dataPrevista, encerradaEm   (só em retiradas)
+  retiradaId                  (só em devoluções)
+  criadoEm
 ```
 
-Regras associadas:
+</details>
 
-- **Retirada, devolução e consumo** usam `runTransaction`: lê o saldo do item, valida, atualiza `quantidadeDisponivel` e cria a movimentação na mesma operação.
-- **Histórico imutável:** as Security Rules permitem apenas `create` em `movimentacoes`. A única atualização aceita é preencher `encerradaEm` de uma retirada, uma única vez.
-- **Exclusão de item** grava `excluidoEm` e uma movimentação do tipo `exclusao`; o item some de todas as telas. **Exclusão de local** é física e só é permitida se nenhum item ativo aponta para ele.
-- Todo documento de `itens` atualiza `atualizadoEm`, usado na sincronização incremental ([ADR-002](#adr-002--persistência-local-e-sessão-do-usuário)).
+Regras que acompanham o modelo:
+
+1. **Transação:** retirada, devolução e consumo usam `runTransaction`. O app lê o saldo, valida e grava o novo saldo junto com a movimentação.
+2. **Histórico imutável:** as Security Rules só permitem criar movimentações. A única alteração aceita é preencher `encerradaEm` de uma retirada, uma vez.
+3. **Exclusão de item:** preenche `excluidoEm` e cria uma movimentação `exclusao`. O item some de todas as telas, mas o documento continua no banco.
+4. **Exclusão de local:** apaga o documento de verdade, e só é permitida quando nenhum item ativo está nele.
 
 ### Alternativas consideradas
 
-| Alternativa | Prós | Contras | Por que não |
+| Alternativa | Vantagem | Desvantagem | Veredito |
 |---|---|---|---|
-| **A. Subcoleção** `itens/{id}/movimentacoes` | Histórico de um item fica agrupado; leitura natural para RF23 | "Empréstimos atrasados" e "meus empréstimos" exigem `collectionGroup` e índices extras; regras mais complexas | A consulta cruzada (item 3 do contexto) é central para o problema dos equipamentos sumidos |
-| **B. Array `historico` dentro do item** | Uma leitura traz item + histórico | Documento limitado a **1 MiB**; duas retiradas simultâneas disputam o mesmo documento; impossível consultar empréstimos entre itens | Cresce sem limite e quebra o RNF17 (5 anos de histórico) |
-| **C. Modelo normalizado, sem cópias** (só IDs) | Sem dados duplicados; renomear algo é uma escrita só | Listar 20 itens com o nome do local = 20 + N leituras; lista de histórico precisa buscar cada usuário | Estoura a cota gratuita (RNF27) e deixa as listas lentas (RNF04) |
-| **D. Banco relacional** (Supabase / PostgreSQL) | JOIN, busca textual e integridade referencial nativos | Foge da stack vista em aula; mais uma conta e SDK para o time aprender | A disciplina recomenda Firebase como caminho de menor atrito |
-| **✅ E. Coleções raiz + desnormalização** | Consultas cruzadas simples; listas em 1 leitura por documento; histórico sem limite de tamanho | Dados copiados precisam ser mantidos em sincronia | **Escolhida** |
+| Histórico como subcoleção de cada item | O histórico de um item fica agrupado | Listar empréstimos atrasados de todos os itens exige consultas de grupo e índices extras | ❌ A consulta entre itens é o centro do problema dos equipamentos sumidos |
+| Histórico como lista dentro do item | Uma leitura traz o item e o histórico | Documento limitado a 1 MiB; duas retiradas simultâneas disputam o mesmo documento | ❌ O histórico cresce sem limite e precisa durar 5 anos |
+| Modelo sem cópias, só com ids | Nenhum dado duplicado | Uma lista de 20 itens com o nome do local custa 40 leituras em vez de 20 | ❌ Estoura a cota gratuita e deixa as listas lentas |
+| Banco relacional (Supabase / PostgreSQL) | JOIN, busca por texto e integridade nativos | Stack diferente da vista em aula; mais uma conta e SDK para aprender | ❌ A disciplina recomenda Firebase |
+| **Coleções na raiz com campos copiados** | Consultas entre itens simples; cada lista custa uma leitura por item | Os dados copiados precisam ser mantidos em dia | ✅ **Escolhida** |
 
 ### Consequências assumidas
 
-**Positivas**
-- Toda tela de lista é resolvida com **uma consulta** e 1 leitura por documento exibido.
-- Empréstimos atrasados = `movimentacoes where tipo == "retirada" and encerradaEm == null and dataPrevista < agora`.
-- O saldo do item nunca fica diferente do histórico, graças à transação.
+**Ganhos**
 
-**Negativas (aceitas)**
-- **Dados duplicados:** renomear um local obriga a atualizar `localRotulo` em todos os itens dele (feito em `writeBatch`, máx. 500 escritas por lote). Renomear item **não** altera `itemNome` em movimentações antigas — o histórico mostra o nome da época, o que é aceitável para auditoria.
-- **Busca por "contém" não existe no Firestore:** "etan" não encontra "Etanol 70%" por consulta remota. A busca passa a ser feita no cache local ([ADR-002](#adr-002--persistência-local-e-sessão-do-usuário)).
-- **Exclusão lógica de itens:** o documento continua no Firestore com `excluidoEm`. É necessário para que outros aparelhos saibam que o item foi excluído e para preservar o histórico. Filtros de todas as consultas precisam incluir `excluidoEm == null`.
-- Índices compostos precisam ser criados no console (ex.: `tipo + encerradaEm + dataPrevista`).
+- Toda tela de lista é resolvida com uma consulta.
+- Empréstimos atrasados saem de uma única consulta: retiradas sem `encerradaEm` e com `dataPrevista` no passado.
+- O saldo do item nunca diverge do histórico, por causa da transação.
+
+**Custos aceitos**
+
+- Renomear um local obriga a atualizar `localRotulo` em todos os itens dele, em lotes de até 500 gravações.
+- Renomear um item não altera `itemNome` nas movimentações antigas. O histórico mostra o nome da época.
+- O Firestore não encontra "Etanol 70%" buscando "etan". A busca por trecho passa para o cache local ([ADR-002](#adr-002--persistência-local-e-sessão-do-usuário)).
+- Itens excluídos continuam no banco. Toda consulta precisa filtrar `excluidoEm == null`.
+- Algumas consultas exigem índices compostos criados manualmente no console do Firebase.
 
 ---
 
@@ -109,47 +126,50 @@ Regras associadas:
 
 **Status:** ✅ Aceita · **Data:** 27/09/2026
 
+> **Em uma frase:** a sessão fica salva no aparelho com AsyncStorage, o inventário é espelhado num banco SQLite local para consulta e busca, e toda gravação vai direto ao Firestore.
+
 ### Contexto
 
-O app precisa de persistência **local e remota**. O usuário deve continuar logado ao reabrir o app, e as telas privadas devem ser inacessíveis sem login. Além disso:
-
+- O app precisa guardar dados no aparelho e no servidor.
+- O usuário deve continuar logado ao reabrir o app, e as telas privadas não podem abrir sem login.
 - A busca por trecho do nome não é possível no Firestore ([ADR-001](#adr-001--modelagem-dos-dados-no-firestore)).
-- Laboratórios costumam ter sinal fraco; o inventário precisa ser **consultável sem conexão**.
-- Tudo precisa rodar no **Expo Go**, que só executa JavaScript e os módulos nativos já incluídos nele.
+- Laboratórios costumam ter sinal fraco, então o inventário precisa ser consultável sem internet.
 
 ### Decisão
 
-1. **Firebase JS SDK** (`firebase`), não `@react-native-firebase`, por funcionar no Expo Go.
-2. **Sessão persistente:** `initializeAuth` com `getReactNativePersistence(AsyncStorage)`. O token fica no aparelho e o login sobrevive ao fechamento do app.
-3. **Rotas protegidas com Expo Router:** as telas privadas ficam no grupo `app/(privado)/`. O `_layout.js` do grupo observa `onAuthStateChanged`; sem usuário, faz `<Redirect href="/login" />`. Enquanto o Firebase restaura a sessão, uma tela de carregamento impede o "piscar" da tela de login.
-4. **Cache local em `expo-sqlite`** com as tabelas `itens`, `locais` e `sync_meta`:
-   - Ao abrir o app e no *pull-to-refresh*, baixa só o que mudou: `itens where atualizadoEm > ultimaSincronizacao`.
-   - Itens com `excluidoEm` preenchido são **removidos** do SQLite.
+1. **SDK:** usar o Firebase JavaScript SDK (`firebase`), que funciona no Expo Go.
+2. **Sessão:** iniciar o Auth com `initializeAuth` + `getReactNativePersistence(AsyncStorage)`. O login continua valendo depois que o app é fechado.
+3. **Telas privadas:** ficam no grupo de rotas `app/(privado)/` do Expo Router. O `_layout.js` do grupo observa `onAuthStateChanged` e, sem usuário, redireciona para `/login`. Enquanto o Firebase restaura a sessão, aparece uma tela de carregamento.
+4. **Cache local:** banco SQLite (`expo-sqlite`) com as tabelas `itens`, `locais` e `sync_meta`.
+   - Ao abrir o app e ao puxar a lista para baixo, baixa só os itens com `atualizadoEm` posterior à última sincronização.
+   - Itens com `excluidoEm` preenchido são apagados do SQLite.
    - Busca, filtros e alertas de validade leem do SQLite (`LIKE '%etan%'`).
-5. **Escritas vão direto ao Firestore** e, em caso de sucesso, atualizam o SQLite. Sem conexão, o app mostra um aviso e desabilita os botões de criar, editar, excluir e retirar.
+5. **Gravações:** criar, editar, excluir e retirar vão direto ao Firestore e, se derem certo, atualizam o SQLite. Sem internet, esses botões ficam desabilitados com um aviso.
 
 ### Alternativas consideradas
 
-| Alternativa | Prós | Contras | Por que não |
+| Alternativa | Vantagem | Desvantagem | Veredito |
 |---|---|---|---|
-| **A. Cache offline nativo do Firestore** (`persistentLocalCache`) | Zero código de sincronização | Depende de IndexedDB, que **não existe** no React Native; no app, o cache é só em memória e some ao fechar | Não cumpre persistência local |
-| **B. `@react-native-firebase`** | Cache offline real no disco, SDK nativo mais rápido | Exige *development build*; **não roda no Expo Go** | Não roda no Expo Go |
-| **C. Só AsyncStorage** (JSON com a lista inteira) | API simples; já usado para a sessão | Lê e grava a lista **inteira** a cada alteração; sem consulta nem índice; lento com 10.000 itens | Não atende RNF01 (busca ≤ 1 s com 10.000 itens) |
-| **D. Offline-first completo** (fila de escritas pendentes) | Funciona 100% sem internet | Resolver conflitos (duas retiradas do mesmo item offline) é complexo; risco de saldo negativo | Custo alto demais para o prazo; transações exigem servidor |
-| **✅ E. SQLite como cache de leitura + escrita online** | Busca "contém" rápida; consulta offline; sincronização incremental economiza leituras; roda no Expo Go | Escrita exige conexão; código de sincronização próprio | **Escolhida** |
+| Cache offline do próprio Firestore | Nenhum código de sincronização | Depende de IndexedDB, que não existe no React Native; o cache fica só na memória | ❌ Não guarda nada no aparelho |
+| `@react-native-firebase` | Cache real em disco e SDK mais rápido | Exige development build | ❌ Não roda no Expo Go |
+| Guardar tudo no AsyncStorage | API simples, já usada para a sessão | Lê e grava a lista inteira a cada mudança; sem busca nem índice | ❌ Fica lento com milhares de itens |
+| Offline completo, com fila de gravações | Funciona inteiro sem internet | Conflitos difíceis, como duas retiradas do mesmo item sem sinal | ❌ Complexo demais para o prazo |
+| **SQLite para leitura, gravação sempre online** | Busca por trecho rápida, consulta offline, poucas leituras no servidor | Gravar exige internet; sincronização própria | ✅ **Escolhida** |
 
 ### Consequências assumidas
 
-**Positivas**
-- Busca, lista e alertas funcionam **sem internet** e em ≤ 1 s localmente (RNF01).
-- Reabrir o app custa só as leituras do que mudou, não o inventário inteiro (RNF27).
-- Sessão persistente e proteção de rota ficam em **um único layout**, sem checagem espalhada por tela.
+**Ganhos**
 
-**Negativas (aceitas)**
-- **Sem conexão, não se registra retirada.** O aluno que pega um item no subsolo sem sinal precisa registrar depois. Mitigação: botão desabilitado com a mensagem "Sem conexão — registre assim que voltar o sinal".
-- **Cache pode ficar desatualizado** entre sincronizações; outro usuário pode ter retirado o item. Mitigação: a transação no servidor revalida o saldo e o app mostra o saldo real no erro.
-- **Código de sincronização é nosso:** é preciso testar migração de esquema do SQLite quando o modelo mudar (tabela `sync_meta` guarda a versão do esquema).
-- A proteção de rota é **só de interface**. A segurança real depende das Security Rules do Firestore exigirem `request.auth != null` (RNF13).
+- Busca, lista e alertas funcionam sem internet e respondem em menos de 1 segundo.
+- Reabrir o app custa só as leituras do que mudou, não o inventário inteiro.
+- A proteção das telas privadas fica num único arquivo de layout.
+
+**Custos aceitos**
+
+- Sem internet não dá para registrar retirada. O usuário registra assim que o sinal voltar.
+- O cache pode estar desatualizado se outra pessoa retirou o item. A transação no servidor confere o saldo real e o app mostra o valor correto no erro.
+- O código de sincronização é do time, incluindo migrar o SQLite quando o modelo mudar (`sync_meta` guarda a versão do esquema).
+- O redirecionamento protege só a interface. A segurança real depende das Security Rules exigirem `request.auth != null`.
 
 ---
 
@@ -157,68 +177,83 @@ O app precisa de persistência **local e remota**. O usuário deve continuar log
 
 **Status:** ✅ Aceita · **Data:** 27/09/2026
 
+> **Em uma frase:** o app envia a foto do rótulo direto para o Gemini, recebe os campos em JSON e guarda a chave num arquivo `.env` que nunca vai para o Git.
+
 ### Contexto
 
-A funcionalidade de IA é o cadastro pela foto do rótulo (RF08–RF09): a LLM lê a embalagem e **sugere** nome, concentração, fabricante e validade. Ela precisa:
-
-- Devolver dados que o formulário consiga preencher sem interpretação manual.
-- Mostrar carregamento e tratar erros: sem internet, cota esgotada, tempo esgotado, rótulo ilegível.
-- Depender da **câmera**, com tratamento de permissão negada.
-- Não ter chave de API no repositório.
-
-Chamar a LLM a partir de um servidor (Cloud Functions) esconderia a chave, mas o Cloud Functions **exige o plano Blaze** do Firebase, com cartão de crédito cadastrado.
+- A IA lê a foto do rótulo e sugere nome, concentração, fabricante e validade. Nada é salvo sem o usuário confirmar.
+- A resposta precisa encaixar direto no formulário, sem interpretação manual.
+- A tela precisa mostrar carregamento e tratar falhas: sem internet, cota esgotada, demora e rótulo ilegível.
+- A foto depende da câmera, e o usuário pode negar a permissão.
+- Nenhuma chave de API pode ficar no repositório.
+- Esconder a chave num servidor exigiria Cloud Functions, que só funciona no plano pago (Blaze) do Firebase.
 
 ### Decisão
 
-1. **Provedor:** Google Gemini, via chave do Google AI Studio (tier gratuito), chamado **direto do app** pela API REST com `fetch`.
-2. **Saída estruturada:** a requisição usa `responseMimeType: "application/json"` e `responseSchema` com os quatro campos, todos anuláveis. O prompt instrui: *"se não conseguir ler um campo com certeza, retorne null — nunca invente"*.
+1. **Provedor:** Google Gemini, com chave gratuita do Google AI Studio, chamado direto do app pela API REST (`fetch`).
+2. **Resposta estruturada:** a chamada usa `responseMimeType: "application/json"` e `responseSchema` com quatro campos, todos anuláveis. O prompt instrui a IA a devolver `null` quando não tiver certeza, em vez de inventar.
 3. **Fluxo na tela de cadastro:**
-   ```
+
+   ```text
    Pedir permissão da câmera (expo-camera)
-     ├─ negada  → mensagem explicando o uso + botão "Abrir configurações"
-     │            + formulário manual continua disponível
-     └─ concedida → foto → compressão (expo-image-manipulator, ≤ 500 KB)
-          → indicador "Lendo rótulo..." + botão Cancelar
-          → Gemini (timeout 8 s via AbortController)
-              ├─ sucesso → campos preenchidos e destacados como sugestão
-              ├─ campo null → campo vazio com aviso "não identificado"
-              └─ erro → mensagem específica + seguir no modo manual
+     ├─ negada     → explica o uso + botão "Abrir configurações"
+     │               + cadastro manual continua disponível
+     └─ concedida  → foto → compressão (≤ 500 KB)
+                   → "Lendo rótulo..." + botão Cancelar
+                   → Gemini (limite de 8 s)
+                       ├─ sucesso      → campos destacados como sugestão
+                       ├─ campo null   → campo vazio, aviso "não identificado"
+                       └─ erro         → mensagem + cadastro manual
    ```
-4. **Tratamento de erros por tipo:**
+
+4. **Mensagens de erro:**
 
    | Situação | Mensagem ao usuário |
    |---|---|
-   | Sem conexão | "Sem internet. Preencha manualmente ou tente de novo." |
-   | HTTP 429 (cota) | "Limite de leituras atingido. Tente em alguns minutos." |
-   | Timeout (> 8 s) | "A leitura demorou demais. Tente outra foto." |
-   | JSON inválido | "Não foi possível ler o rótulo. Preencha manualmente." |
+   | Sem internet | Sem internet. Preencha manualmente ou tente de novo. |
+   | Cota esgotada (HTTP 429) | Limite de leituras atingido. Tente em alguns minutos. |
+   | Mais de 8 segundos | A leitura demorou demais. Tente outra foto. |
+   | Resposta fora do formato | Não foi possível ler o rótulo. Preencha manualmente. |
 
-5. **Chaves e configuração:**
-   - Chave do Gemini e configuração do Firebase em `.env`, lidas por `process.env.EXPO_PUBLIC_*`.
+5. **Chaves:**
+   - Chave do Gemini e configuração do Firebase no `.env`, lidas por `process.env.EXPO_PUBLIC_*`.
    - `.env` no `.gitignore`; o repositório tem um `.env.example` com os nomes das variáveis e valores vazios.
-   - Nome do modelo também em variável (`EXPO_PUBLIC_GEMINI_MODEL`), para trocar sem alterar código.
-   - No Google Cloud, a chave é **restrita à Generative Language API**.
-   - Verificação antes de cada *commit*: `git grep -n "AIza"` não pode retornar resultados.
+   - O modelo do Gemini também fica no `.env` (`EXPO_PUBLIC_GEMINI_MODEL`), para trocar sem mexer no código.
+   - No Google Cloud, a chave só pode ser usada na Generative Language API.
+
+   ```bash
+   # .env.example
+   EXPO_PUBLIC_GEMINI_API_KEY=
+   EXPO_PUBLIC_GEMINI_MODEL=
+   EXPO_PUBLIC_FIREBASE_API_KEY=
+   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+   EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+   EXPO_PUBLIC_FIREBASE_APP_ID=
+   ```
 
 ### Alternativas consideradas
 
-| Alternativa | Prós | Contras | Por que não |
+| Alternativa | Vantagem | Desvantagem | Veredito |
 |---|---|---|---|
-| **A. Cloud Functions como proxy** | Chave fica só no servidor; dá para limitar uso por usuário | Exige plano **Blaze** (cartão de crédito) | Nem todo integrante tem cartão; aumenta a configuração do projeto |
-| **B. Firebase AI Logic** (SDK `firebase/ai`) | Sem chave do Gemini no app; funciona no plano gratuito com a Gemini Developer API | A proteção real depende do App Check, cujo provedor nativo não roda no Expo Go; menos exemplos para React Native | Não dá para validar a proteção no Expo Go dentro do prazo; fica como evolução |
-| **C. OCR tradicional** (ML Kit / Tesseract) + regras | Sem custo por chamada; funciona offline | Devolve texto cru, não campos; regras para achar "validade" variam por fabricante; ML Kit exige módulo nativo (fora do Expo Go) | Não resolve o problema de estruturar os dados; não roda no Expo Go |
-| **D. Outro provedor** (OpenAI, Anthropic) | Modelos com boa leitura de imagem | Sem tier gratuito comparável; exige cartão | Custo para o projeto acadêmico |
-| **✅ E. Gemini direto do app + JSON estruturado + chave em `.env`** | Sem servidor; tier gratuito; resposta já no formato do formulário | Chave vai embutida no app compilado | **Escolhida** |
+| Cloud Functions como intermediário | A chave fica só no servidor | Exige o plano Blaze, com cartão de crédito | ❌ Nem todo integrante tem cartão |
+| Firebase AI Logic | Sem chave do Gemini no app e disponível no plano gratuito | A proteção real depende do App Check, que não roda no Expo Go | ⏸️ Fica como evolução |
+| OCR tradicional com regras próprias | Sem custo por chamada e funciona offline | Devolve texto solto, não campos; as bibliotecas boas são nativas | ❌ Não estrutura os dados e não roda no Expo Go |
+| Outro provedor de LLM (OpenAI, Anthropic) | Boa leitura de imagem | Sem plano gratuito equivalente | ❌ Custo para um projeto acadêmico |
+| **Gemini direto do app, JSON e chave no `.env`** | Sem servidor, gratuito, resposta no formato do formulário | A chave vai embutida no app compilado | ✅ **Escolhida** |
 
 ### Consequências assumidas
 
-**Positivas**
-- A IA devolve **exatamente** os campos do formulário; não há texto livre para interpretar.
-- Todo erro tem saída: o cadastro manual está sempre disponível, e a IA nunca é pré-requisito para cadastrar.
-- Nenhuma chave no Git; qualquer integrante configura o projeto copiando `.env.example`.
+**Ganhos**
 
-**Negativas (aceitas)**
-- **A chave não é secreta de verdade.** Variáveis `EXPO_PUBLIC_*` são embutidas no JavaScript do app; quem extrair o pacote consegue lê-la. A chave não é versionada, mas a chave **não fica protegida** em produção. Aceito por ser um projeto acadêmico em Expo Go; a mitigação é restringir a chave à Generative Language API e revogá-la ao fim da disciplina. Para produção, migrar para a alternativa A ou B.
-- **Dependência do tier gratuito:** limites de requisições por minuto e por dia podem mudar sem aviso; o app trata o erro 429, mas não evita.
-- **Privacidade:** no tier gratuito do AI Studio, o Google pode usar os dados enviados para melhorar seus produtos. Aceitável porque só a foto do rótulo é enviada, sem dados de usuários.
-- **A IA pode errar sem sinalizar** (ex.: ler "2027" como "2021"). Mitigado pela regra do produto: nenhum campo sugerido é salvo sem confirmação (RF09, RNF07).
+- A IA devolve exatamente os campos do formulário.
+- Toda falha tem saída: o cadastro manual está sempre disponível, e a IA nunca é obrigatória.
+- Nenhuma chave no Git. Para configurar o projeto, basta copiar o `.env.example` e preencher.
+
+**Custos aceitos**
+
+> [!WARNING]
+> A chave não fica secreta de verdade. Variáveis `EXPO_PUBLIC_*` são embutidas no app, e quem extrair o pacote consegue lê-la. Aceito por ser projeto acadêmico; a chave será restrita ao Gemini e revogada ao fim da disciplina.
+
+- O app depende dos limites do plano gratuito, que podem mudar. O erro de cota é tratado, mas não evitado.
+- No plano gratuito, o Google pode usar os dados enviados para melhorar seus produtos. Só a foto do rótulo é enviada, sem dados de pessoas.
+- A IA pode errar sem avisar, como ler 2027 como 2021. Por isso nenhum campo sugerido é salvo sem confirmação.
