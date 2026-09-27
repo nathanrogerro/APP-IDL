@@ -144,7 +144,6 @@ Aplicativo mobile para cadastrar, localizar e controlar reagentes, vidraria e eq
 
 ## 7. Requisitos não-funcionais
 
-> Todos mensuráveis. Nada de "rápido", "seguro" ou "intuitivo" sem número.
 
 ### Desempenho
 
