@@ -5,7 +5,7 @@ equipamentos de laboratório.
 
 ## 📚 Documentação
 
-- [PRD — Product Requirements Document](docs/PRD.md)
+- [PRD — Product Requirements Document](docs/01-PRD.md)
 
 ## 🖥️ Protótipo
 
