@@ -9,4 +9,4 @@ equipamentos de laboratório.
 
 ## 🖥️ Protótipo
 
-- [Protótipo das telas](labsto_mobile_app_prototype.html)
+- [Protótipo das telas](docs/02-labsto_mobile_app_prototype.html)
