@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabSto - Gestão de Estoque de Laboratório</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #334155;
+      min-height: 100vh;
+    }
+
+    /* Custom scrollbar for mobile screen inner container */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Target frame pulse animation */
+    @keyframes scan-line {
+      0% { top: 10%; }
+      50% { top: 85%; }
+      100% { top: 10%; }
+    }
+    .scanner-line {
+      animation: scan-line 2.5s infinite ease-in-out;
+    }
+
+    /* Toast notification styling */
+    #toast {
+      transition: all 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center p-2 sm:p-6 min-h-screen">
+
+  <!-- Top Navigation / Outer Controls bar -->
+  <header class="w-full max-w-md mb-4 flex items-center justify-between text-white px-2">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center font-bold text-slate-900">
+        <i class="fa-solid fa-flask text-white text-sm"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold leading-tight">LabSto</h1>
+        <p class="text-xs text-slate-400">Protótipo Interativo Mobile</p>
+      </div>
+    </div>
+    
+    <!-- Outer Screen Switcher for Quick Navigation -->
+    <div class="relative inline-block text-left">
+      <button id="screenSelectorBtn" onclick="toggleScreenDropdown()" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 py-1.5 px-3 rounded-lg border border-slate-700 flex items-center gap-2 transition">
+        <i class="fa-solid fa-layer-group text-teal-400"></i>
+        <span id="currentScreenLabel">1. Capa</span>
+        <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
+      </button>
+      
+      <!-- Dropdown Menu -->
+      <div id="screenDropdown" class="hidden absolute right-0 mt-2 w-56 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 overflow-hidden text-xs">
+        <div class="p-2 text-slate-400 font-semibold border-b border-slate-700">Ir diretamente para:</div>
+        <button onclick="switchScreen(1)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-house w-4 text-teal-400"></i> 1. Capa (Splash)</button>
+        <button onclick="switchScreen(2)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-user-lock w-4 text-teal-400"></i> 2. Login e Cadastro</button>
+        <button onclick="switchScreen(3)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-camera w-4 text-teal-400"></i> 3. Leitura do Rótulo (IA)</button>
+        <button onclick="switchScreen(4)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-pen-to-square w-4 text-teal-400"></i> 4. Cadastro Manual</button>
+        <button onclick="switchScreen(5)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-hand-holding-box w-4 text-teal-400"></i> 5. Retirada de Item</button>
+        <button onclick="switchScreen(6)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-rotate-left w-4 text-teal-400"></i> 6. Devolução & Validade</button>
+        <button onclick="switchScreen(7)" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass w-4 text-teal-400"></i> 7. Busca & Histórico</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="relative w-full max-w-[390px] h-[780px] bg-slate-900 rounded-[45px] p-3 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700 flex flex-col overflow-hidden">
+    
+    <!-- Phone Top Hardware (Notch & Dynamic Island Area) -->
+    <div class="w-full h-6 bg-slate-900 flex justify-between items-center px-6 pt-1 text-[11px] text-slate-300 z-40 select-none">
+      <span class="font-medium">09:41</span>
+      <!-- Speaker Notch -->
+      <div class="w-16 h-3.5 bg-black rounded-full flex items-center justify-center">
+        <div class="w-3 h-3 bg-slate-900 rounded-full border border-slate-700"></div>
+      </div>
+      <div class="flex items-center space-x-1.5">
+        <i class="fa-solid fa-signal text-[10px]"></i>
+        <i class="fa-solid fa-wifi text-[10px]"></i>
+        <i class="fa-solid fa-battery-full text-[11px]"></i>
+      </div>
+    </div>
+
+    <!-- Screen Viewport -->
+    <div class="relative flex-1 bg-slate-50 rounded-[32px] overflow-hidden flex flex-col text-slate-800">
+
+      <!-- Toast Notification Container inside Phone -->
+      <div id="toast" class="opacity-0 pointer-events-none absolute top-4 left-4 right-4 bg-slate-900 text-white text-xs px-3 py-2.5 rounded-xl shadow-xl z-50 flex items-center gap-2 border border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMsg" class="flex-1">Ação executada com sucesso!</span>
+      </div>
+
+      <!-- SCREEN 1: CAPA / SPLASH -->
+      <section id="screen1" class="app-screen active flex flex-col h-full bg-gradient-to-b from-slate-900 via-slate-800 to-teal-950 text-white p-6 justify-between text-center">
+        <div class="pt-8">
+          <span class="inline-block px-3 py-1 bg-teal-500/20 text-teal-300 text-xs font-semibold rounded-full border border-teal-500/30 mb-4">
+            Gestão de Laboratório v2.4
+          </span>
+        </div>
+
+        <div class="flex flex-col items-center my-auto">
+          <div class="w-24 h-24 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-3xl flex items-center justify-center shadow-2xl shadow-teal-500/30 mb-6 relative">
+            <i class="fa-solid fa-flask-vial text-4xl text-slate-900"></i>
+            <div class="absolute -bottom-2 -right-2 bg-slate-900 border-2 border-teal-400 p-2 rounded-xl">
+              <i class="fa-solid fa-boxes-stacked text-xs text-teal-400"></i>
+            </div>
+          </div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-white mb-2">LabSto</h2>
+          <p class="text-sm text-slate-300 max-w-[240px] leading-relaxed font-light">
+            Controle inteligente de inventário, reagentes, validade e empréstimos.
+          </p>
+        </div>
+
+        <div class="space-y-3 pb-6">
+          <button onclick="switchScreen(2)" class="w-full py-3.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-2xl shadow-lg shadow-teal-500/25 active:scale-[0.98] transition flex items-center justify-center gap-2">
+            <span>Entrar no Sistema</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+          <button onclick="switchScreen(2); setAuthTab('signup');" class="w-full py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-white font-medium rounded-2xl border border-slate-700 active:scale-[0.98] transition">
+            Criar Nova Conta
+          </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: LOGIN E CADASTRO -->
+      <section id="screen2" class="app-screen hidden flex flex-col h-full bg-slate-50 p-5 overflow-y-auto no-scrollbar">
+        <!-- Top bar -->
+        <div class="flex items-center justify-between mb-6 pt-2">
+          <button onclick="switchScreen(1)" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 shadow-sm">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+          </button>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Acesso LabSto</span>
+          <div class="w-8"></div>
+        </div>
+
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">Seja bem-vindo</h2>
+          <p class="text-xs text-slate-500 mt-1">Identifique-se para acessar o inventário do laboratório.</p>
+        </div>
+
+        <!-- Tab Toggle -->
+        <div class="flex bg-slate-200/80 p-1 rounded-xl mb-6">
+          <button id="tabLoginBtn" onclick="setAuthTab('login')" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-slate-800 shadow-sm transition">
+            Entrar
+          </button>
+          <button id="tabSignupBtn" onclick="setAuthTab('signup')" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-800 transition">
+            Criar Conta
+          </button>
+        </div>
+
+        <!-- Form Box -->
+        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+          <div id="signupNameField" class="hidden">
+            <label class="block text-xs font-medium text-slate-700 mb-1">Nome Completo</label>
+            <div class="relative">
+              <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="text" placeholder="Dr. Carlos Silva" class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">E-mail Acadêmico / Institucional</label>
+            <div class="relative">
+              <i class="fa-solid fa-envelope absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="email" required placeholder="usuario@universidade.edu.br" value="prof.carlos@lab.edu.br" class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Senha de Acesso</label>
+            <div class="relative">
+              <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="password" required value="123456" placeholder="••••••••" class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Perfil no Laboratório</label>
+            <div class="relative">
+              <i class="fa-solid fa-id-badge absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <select id="userRoleSelect" class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none text-slate-700">
+                <option value="Professor">Professor Responsável</option>
+                <option value="Técnico">Técnico de Laboratório</option>
+                <option value="Estudante">Estudante de Iniciação Científica</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] pt-1">
+            <label class="flex items-center text-slate-500">
+              <input type="checkbox" checked class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 mr-1.5">
+              Lembrar acesso
+            </label>
+            <a href="#" class="text-teal-600 font-semibold hover:underline">Esqueceu a senha?</a>
+          </div>
+
+          <button type="submit" id="authSubmitBtn" class="w-full mt-2 py-3 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl shadow-md transition text-xs">
+            Acessar Sistema
+          </button>
+        </form>
+
+        <div class="mt-auto pt-6 text-center text-[11px] text-slate-400">
+          LabSto Security &bull; Conectado à Rede Científica
+        </div>
+      </section>
+
+      <!-- SCREEN 3: CADASTRO VIA IA (RÓTULO / CÂMERA) -->
+      <section id="screen3" class="app-screen hidden flex flex-col h-full bg-slate-900 text-white overflow-y-auto no-scrollbar">
+        <!-- Header -->
+        <div class="p-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between sticky top-0 z-20">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-teal-400 text-sm"></i>
+            <h3 class="font-bold text-sm">Cadastro por Rótulo (IA)</h3>
+          </div>
+          <span class="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">Visão Computacional</span>
+        </div>
+
+        <div class="p-4 flex-1 flex flex-col space-y-4">
+          <!-- Camera Preview Viewfinder -->
+          <div class="relative w-full h-48 bg-slate-950 rounded-2xl overflow-hidden border-2 border-dashed border-teal-500/50 flex flex-col items-center justify-center group shadow-inner">
+            
+            <!-- Simulated Label Image in Camera -->
+            <div id="cameraMockup" class="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center p-4">
+              <div class="w-40 h-28 bg-white/95 rounded-lg text-slate-800 p-2 text-[10px] shadow-lg flex flex-col justify-between border border-slate-300 relative overflow-hidden">
+                <div class="flex justify-between items-start border-b pb-1">
+                  <span class="font-bold text-slate-900 text-[11px]">SOLUÇÃO TAMPÃO pH 7.00</span>
+                  <span class="text-[8px] bg-red-100 text-red-600 px-1 rounded font-bold">PERIGO</span>
+                </div>
+                <div class="space-y-0.5 text-[9px] text-slate-600">
+                  <p>Marca: <strong>Labsynth</strong></p>
+                  <p>Concentração: <strong>0.05 M</strong></p>
+                  <p>Lote: <strong>2024-B90</strong> | Val: <strong>15/10/2027</strong></p>
+                </div>
+                <div class="flex justify-between items-center pt-1 border-t border-slate-200">
+                  <i class="fa-solid fa-barcode text-lg"></i>
+                  <span class="text-[8px] font-mono">REF-883921</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target Reticle & Scanner Line -->
+            <div id="scannerOverlay" class="absolute inset-0 pointer-events-none border-2 border-teal-400/40 m-3 rounded-xl flex flex-col justify-between p-2">
+              <div class="scanner-line absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-teal-400 to-transparent shadow-[0_0_8px_#2dd4bf]"></div>
+              <div class="flex justify-between text-teal-400 text-xs">
+                <span>┌</span><span>┐</span>
+              </div>
+              <div class="flex justify-between text-teal-400 text-xs">
+                <span>└</span><span>┘</span>
+              </div>
+            </div>
+
+            <!-- Action Button overlay on Camera -->
+            <div class="absolute bottom-2 z-10">
+              <button onclick="simulateAIScan()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5 active:scale-95 transition">
+                <i class="fa-solid fa-camera"></i>
+                <span>Capturar & Extrair com IA</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading AI Overlay -->
+          <div id="aiLoading" class="hidden bg-slate-800/90 rounded-2xl p-4 text-center border border-slate-700">
+            <div class="inline-block animate-spin text-teal-400 text-xl mb-2">
+              <i class="fa-solid fa-circle-notch"></i>
+            </div>
+            <p class="text-xs text-slate-200 font-medium">Modelando texto via LLM & Reconhecimento de Rótulo...</p>
+            <p class="text-[10px] text-slate-400 mt-1">Lendo concentração, lote e validade.</p>
+          </div>
+
+          <!-- Important Pedagogy / Differential Warning Header -->
+          <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-2.5">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm mt-0.5"></i>
+            <div class="text-[11px] text-amber-200/90 leading-tight">
+              <strong class="font-semibold text-amber-300">Sugestão da IA (Não é verdade absoluta):</strong>
+              Confira e corrija qualquer campo extraído do rótulo antes de confirmar no inventário.
+            </div>
+          </div>
+
+          <!-- Confirmed/Editable Fields Form -->
+          <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 space-y-3">
+            <h4 class="text-xs font-semibold text-slate-300 flex items-center justify-between border-b border-slate-700 pb-2">
+              <span>Campos Extraídos pela IA</span>
+              <span class="text-[10px] text-teal-400 font-normal"><i class="fa-solid fa-pen text-[9px] mr-1"></i> Editável</span>
+            </h4>
+
+            <div>
+              <label class="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Nome do Item / Reagente</label>
+              <input id="aiItemName" type="text" value="Solução Tampão pH 7.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Concentração / Specs</label>
+                <input id="aiSpecs" type="text" value="0.05 M - Labsynth" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Validade Estimada</label>
+                <input id="aiExpiry" type="date" value="2027-10-15" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Quantidade Incial</label>
+                <input id="aiQty" type="text" value="1 Frasco (500ml)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 uppercase tracking-wider mb-1">Localização Física</label>
+                <input id="aiLoc" type="text" value="Armário B - Prateleira 3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none">
+              </div>
+            </div>
+
+            <button onclick="saveAICadastro()" class="w-full mt-2 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Confirmar e Salvar Item</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: CADASTRO MANUAL DO ITEM -->
+      <section id="screen4" class="app-screen hidden flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-slate-800 text-lg">Cadastro Manual</h3>
+          <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded-full font-medium">Formulário Direto</span>
+        </div>
+
+        <form onsubmit="handleManualCadastro(event)" class="space-y-3.5 flex-1">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Material *</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="itemType" value="Reagente" checked class="peer hidden">
+                <div class="p-2 text-center border border-slate-300 rounded-xl peer-checked:bg-teal-600 peer-checked:text-white peer-checked:border-teal-600 text-slate-600 text-xs transition">
+                  <i class="fa-solid fa-vial block mb-1"></i> Reagente
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="itemType" value="Vidraria" class="peer hidden">
+                <div class="p-2 text-center border border-slate-300 rounded-xl peer-checked:bg-teal-600 peer-checked:text-white peer-checked:border-teal-600 text-slate-600 text-xs transition">
+                  <i class="fa-solid fa-glass-water block mb-1"></i> Vidraria
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="itemType" value="Equipamento" class="peer hidden">
+                <div class="p-2 text-center border border-slate-300 rounded-xl peer-checked:bg-teal-600 peer-checked:text-white peer-checked:border-teal-600 text-slate-600 text-xs transition">
+                  <i class="fa-solid fa-microscope block mb-1"></i> Equipam.
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nome do Item / Descrição *</label>
+            <input type="text" id="manualName" required placeholder="Ex: Ácido Clorídrico PA 37%" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Quantidade *</label>
+              <input type="number" id="manualQty" required min="1" value="1" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Unidade</label>
+              <select id="manualUnit" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <option>Frasco(s)</option>
+                <option>Litro(s)</option>
+                <option>Unidade(s)</option>
+                <option>Caixa(s)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Localização Física Exata *</label>
+            <div class="relative">
+              <i class="fa-solid fa-location-dot absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="text" id="manualLoc" required placeholder="Ex: Armário A - Prateleira 2 / Geladeira 1" class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Data de Validade (Obrigatório p/ Reagentes)</label>
+            <input type="date" id="manualDate" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl shadow-md transition text-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Salvar no Inventário</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- SCREEN 5: RETIRADA DE ITEM -->
+      <section id="screen5" class="app-screen hidden flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">Retirada de Item</h3>
+            <p class="text-[11px] text-slate-500">Registre o uso ou empréstimo de materiais</p>
+          </div>
+          <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-hand-holding"></i>
+          </div>
+        </div>
+
+        <form onsubmit="handleRetiradaSubmit(event)" class="space-y-3.5 flex-1">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Selecione o Item do Estoque *</label>
+            <select id="retiradaItemSelect" onchange="updateRetiradaInfo()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+              <!-- Dynamically populated via JS -->
+            </select>
+          </div>
+
+          <!-- Dynamic Location & Stock Info Card -->
+          <div id="retiradaItemCard" class="bg-teal-50 border border-teal-200 rounded-xl p-3 text-xs text-teal-900 space-y-1">
+            <div class="flex justify-between font-semibold">
+              <span id="cardItemName">Acetona PA 99.5%</span>
+              <span id="cardItemStock" class="bg-teal-200 text-teal-800 px-2 py-0.5 rounded text-[10px]">3 Frascos dispon.</span>
+            </div>
+            <p class="text-[11px] text-teal-700 flex items-center gap-1">
+              <i class="fa-solid fa-map-pin text-teal-600"></i>
+              <span id="cardItemLoc">Armário de Inflamáveis - Prateleira B</span>
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Qtd a Retirar *</label>
+              <input type="number" id="retiradaQty" required min="1" value="1" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Finalidade</label>
+              <select class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <option>Aula Prática</option>
+                <option>Pesquisa IC</option>
+                <option>Análise de Rotina</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Responsável pela Retirada *</label>
+            <input type="text" id="retiradaResp" required value="Prof. Carlos Silva (Logado)" class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium cursor-not-allowed" readonly>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Data Prevista de Devolução *</label>
+            <input type="date" id="retiradaDataDev" required class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-md transition text-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-box-archive"></i>
+              <span>Confirmar Retirada</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- SCREEN 6: DEVOLUÇÃO E ALERTA DE VALIDADE -->
+      <section id="screen6" class="app-screen hidden flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar p-4 space-y-4">
+        
+        <!-- Section Header -->
+        <div class="flex items-center justify-between border-b pb-2 border-slate-200">
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">Devoluções & Validade</h3>
+            <p class="text-[11px] text-slate-500">Monitoramento ativo de estoque e prazos</p>
+          </div>
+          <span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded-full">Alertas Ativos</span>
+        </div>
+
+        <!-- SUB-SECTION 1: ALERTAS DE VALIDADE (CRÍTICO) -->
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-bell-concierge text-red-500"></i>
+            <span>Controle de Validade</span>
+          </h4>
+
+          <!-- Expiry Alert Card 1 - EXPIRED -->
+          <div class="bg-red-50 border-l-4 border-red-500 rounded-r-xl p-3 shadow-sm space-y-1">
+            <div class="flex justify-between items-start">
+              <span class="font-bold text-xs text-red-900">Nitrato de Prata 0.1M</span>
+              <span class="bg-red-200 text-red-800 text-[9px] font-bold px-1.5 py-0.5 rounded">VENCIDO</span>
+            </div>
+            <p class="text-[11px] text-red-700">Venceu em: <strong>20/09/2026</strong> (Há 7 dias)</p>
+            <p class="text-[11px] text-slate-600 flex items-center gap-1">
+              <i class="fa-solid fa-location-dot text-red-500 text-[10px]"></i>
+              <span>Geladeira 02 - Prateleira A (Reagente D-12)</span>
+            </p>
+            <div class="pt-1 flex justify-end">
+              <button onclick="descartarItem('Nitrato de Prata')" class="text-[10px] bg-red-600 hover:bg-red-700 text-white font-medium px-2.5 py-1 rounded-lg transition">
+                Registrar Descarte
+              </button>
+            </div>
+          </div>
+
+          <!-- Expiry Alert Card 2 - EXPIRING SOON -->
+          <div class="bg-amber-50 border-l-4 border-amber-500 rounded-r-xl p-3 shadow-sm space-y-1">
+            <div class="flex justify-between items-start">
+              <span class="font-bold text-xs text-amber-900">Acetona PA 99.5%</span>
+              <span class="bg-amber-200 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded">VENCE EM 5 DIAS</span>
+            </div>
+            <p class="text-[11px] text-amber-800">Validade: <strong>02/10/2026</strong></p>
+            <p class="text-[11px] text-slate-600 flex items-center gap-1">
+              <i class="fa-solid fa-location-dot text-amber-600 text-[10px]"></i>
+              <span>Armário de Inflamáveis - Prateleira B</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- SUB-SECTION 2: ITENS AGUARDANDO DEVOLUÇÃO -->
+        <div class="space-y-2 pt-2 border-t border-slate-200">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-left text-teal-600"></i>
+            <span>Empréstimos Pendentes</span>
+          </h4>
+
+          <div id="pendingDevolucoesList" class="space-y-2">
+            <!-- Rendered dynamically via JavaScript -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SCREEN 7: BUSCA INTELIGENTE E HISTÓRICO DE MOVIMENTAÇÃO -->
+      <section id="screen7" class="app-screen hidden flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar p-4 space-y-4">
+        
+        <!-- Header & Search Input -->
+        <div>
+          <h3 class="font-bold text-slate-800 text-base mb-2">Busca & Prevenção</h3>
+          
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar por item, tipo ou prateleira..." class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none shadow-sm">
+          </div>
+        </div>
+
+        <!-- SPECIAL PROFESSOR WARNING / ANTI-DUPLICATE PURCHASING BANNER -->
+        <div id="duplicateWarningBox" class="bg-emerald-50 border-2 border-emerald-400/80 rounded-2xl p-3 shadow-sm flex items-start gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="text-xs text-emerald-950 space-y-0.5">
+            <h5 class="font-bold text-emerald-900">Aviso Anti-Compra Duplicada:</h5>
+            <p id="duplicateWarningText" class="text-[11px] text-emerald-800 leading-snug">
+              Digite o nome do item para verificar se já existe em alguma prateleira antes de autorizar a compra!
+            </p>
+          </div>
+        </div>
+
+        <!-- Search Results Dynamic List -->
+        <div id="searchResults" class="space-y-2">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- ITEM MOVEMENT HISTORY TIMELINE -->
+        <div class="pt-2 border-t border-slate-200">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-teal-600"></i>
+              <span>Histórico de Movimentações</span>
+            </h4>
+            <span class="text-[10px] text-slate-400">Recentes</span>
+          </div>
+
+          <!-- Timeline -->
+          <div id="timelineContainer" class="relative pl-4 border-l-2 border-slate-200 space-y-4">
+            <!-- Timeline Item 1 -->
+            <div class="relative">
+              <div class="absolute -left-[21px] top-0 w-2.5 h-2.5 rounded-full bg-amber-500 ring-4 ring-slate-50"></div>
+              <div class="text-[11px]">
+                <span class="font-bold text-slate-800">Retirada: Acetona PA</span>
+                <p class="text-slate-500 text-[10px]">Por: Prof. Carlos Silva &bull; Hoje às 08:30</p>
+                <p class="text-slate-600 mt-0.5 bg-slate-100 p-1.5 rounded text-[10px]">Retirado 1 frasco para pesquisa IC.</p>
+              </div>
+            </div>
+
+            <!-- Timeline Item 2 -->
+            <div class="relative">
+              <div class="absolute -left-[21px] top-0 w-2.5 h-2.5 rounded-full bg-teal-500 ring-4 ring-slate-50"></div>
+              <div class="text-[11px]">
+                <span class="font-bold text-slate-800">Cadastro IA: Solução Tampão pH 7.00</span>
+                <p class="text-slate-500 text-[10px]">Por: Técnico João &bull; Ontem às 14:15</p>
+                <p class="text-slate-600 mt-0.5 bg-slate-100 p-1.5 rounded text-[10px]">Confirmado após extração de rótulo via foto.</p>
+              </div>
+            </div>
+
+            <!-- Timeline Item 3 -->
+            <div class="relative">
+              <div class="absolute -left-[21px] top-0 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-slate-50"></div>
+              <div class="text-[11px]">
+                <span class="font-bold text-slate-800">Devolução: Balança Analítica</span>
+                <p class="text-slate-500 text-[10px]">Por: Ana (Estudante IC) &bull; 25/09/2026</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Bottom App Navigation Bar (Always Visible inside App Container) -->
+      <nav id="appNavBar" class="hidden bg-slate-900 border-t border-slate-800 text-slate-400 flex justify-around items-center py-2 px-1 z-30">
+        <button onclick="switchScreen(3)" id="nav3" class="flex flex-col items-center gap-0.5 text-[9px] hover:text-teal-400 transition">
+          <i class="fa-solid fa-camera text-sm"></i>
+          <span>IA Camera</span>
+        </button>
+
+        <button onclick="switchScreen(4)" id="nav4" class="flex flex-col items-center gap-0.5 text-[9px] hover:text-teal-400 transition">
+          <i class="fa-solid fa-plus-circle text-sm"></i>
+          <span>Cadastrar</span>
+        </button>
+
+        <button onclick="switchScreen(5)" id="nav5" class="flex flex-col items-center gap-0.5 text-[9px] hover:text-teal-400 transition">
+          <i class="fa-solid fa-hand-holding-box text-sm"></i>
+          <span>Retirar</span>
+        </button>
+
+        <button onclick="switchScreen(6)" id="nav6" class="flex flex-col items-center gap-0.5 text-[9px] hover:text-teal-400 transition">
+          <i class="fa-solid fa-rotate-left text-sm"></i>
+          <span>Devolução</span>
+        </button>
+
+        <button onclick="switchScreen(7)" id="nav7" class="flex flex-col items-center gap-0.5 text-[9px] hover:text-teal-400 transition">
+          <i class="fa-solid fa-magnifying-glass text-sm"></i>
+          <span>Busca</span>
+        </button>
+      </nav>
+
+    </div>
+
+    <!-- Phone Bottom Home Bar -->
+    <div class="w-full h-4 bg-slate-900 flex items-center justify-center pt-1">
+      <div class="w-28 h-1 bg-slate-600 rounded-full"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================================================================
+       APP STATE AND INITIAL DATA MOCK
+       =================================================================== */
+    let currentScreen = 1;
+    let currentUser = {
+      name: "Prof. Carlos Silva",
+      role: "Professor"
+    };
+
+    // Central Inventory Database
+    let inventory = [
+      { id: 1, name: "Acetona PA 99.5%", type: "Reagente", qty: 3, unit: "Frascos", loc: "Armário de Inflamáveis - Prateleira B", expiry: "2026-10-02" },
+      { id: 2, name: "Nitrato de Prata 0.1M", type: "Reagente", qty: 1, unit: "Frascos", loc: "Geladeira 02 - Prateleira A", expiry: "2026-09-20" },
+      { id: 3, name: "Balança Analítica de Precisão", type: "Equipamento", qty: 2, unit: "Unidades", loc: "Bancada Central 01", expiry: "N/A" },
+      { id: 4, name: "Copo de Béquer 250ml", type: "Vidraria", qty: 24, unit: "Unidades", loc: "Armário C - Prateleira 1", expiry: "N/A" },
+      { id: 5, name: "Solução Tampão pH 7.00", type: "Reagente", qty: 2, unit: "Frascos", loc: "Armário B - Prateleira 3", expiry: "2027-10-15" }
+    ];
+
+    // Active Loans / Borrowed Items List
+    let pendingDevolucoes = [
+      { id: 101, item: "Balança Analítica de Precisão", user: "Ana (Iniciação Científica)", date: "2026-09-28", loc: "Bancada Central 01" },
+      { id: 102, item: "Copo de Béquer 250ml (4x)", user: "Lucas (Estudante)", date: "2026-09-29", loc: "Armário C - Prateleira 1" }
+    ];
+
+    // Screen Titles map for Dropdown Label
+    const screenLabels = {
+      1: "1. Capa",
+      2: "2. Login/Cadastro",
+      3: "3. Leitura Rótulo (IA)",
+      4: "4. Cadastro Manual",
+      5: "5. Retirada de Item",
+      6: "6. Devolução & Validade",
+      7: "7. Busca & Histórico"
+    };
+
+    // Screen Switcher Logic
+    function switchScreen(screenNum) {
+      currentScreen = screenNum;
+      
+      // Hide all screens
+      document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+      document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+
+      // Show targeted screen
+      const target = document.getElementById(`screen${screenNum}`);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active');
+      }
+
+      // Update dropdown label
+      document.getElementById('currentScreenLabel').innerText = screenLabels[screenNum];
+      document.getElementById('screenDropdown').classList.add('hidden');
+
+      // Toggle Bottom Navbar visibility (Hidden on Screen 1 & 2)
+      const navBar = document.getElementById('appNavBar');
+      if (screenNum > 2) {
+        navBar.classList.remove('hidden');
+      } else {
+        navBar.classList.add('hidden');
+      }
+
+      // Update Bottom Navbar active highlight
+      updateNavHighlight(screenNum);
+
+      // Screen Specific Initializers
+      if (screenNum === 5) populateRetiradaDropdown();
+      if (screenNum === 6) renderPendingDevolucoes();
+      if (screenNum === 7) handleSearch();
+    }
+
+    function toggleScreenDropdown() {
+      const dropdown = document.getElementById('screenDropdown');
+      dropdown.classList.toggle('hidden');
+    }
+
+    function updateNavHighlight(screenNum) {
+      for (let i = 3; i <= 7; i++) {
+        const btn = document.getElementById(`nav${i}`);
+        if (btn) {
+          if (i === screenNum) {
+            btn.className = "flex flex-col items-center gap-0.5 text-[9px] text-teal-400 font-bold";
+          } else {
+            btn.className = "flex flex-col items-center gap-0.5 text-[9px] text-slate-400 hover:text-teal-400 transition";
+          }
+        }
+      }
+    }
+
+    // Toast Notification Banner
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = message;
+      if (isError) {
+        toastIcon.className = "fa-solid fa-circle-xmark text-red-400 text-sm";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-sm";
+      }
+
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    // Screen 2: Login/Signup Handler
+    function setAuthTab(tab) {
+      const loginBtn = document.getElementById('tabLoginBtn');
+      const signupBtn = document.getElementById('tabSignupBtn');
+      const signupField = document.getElementById('signupNameField');
+      const submitBtn = document.getElementById('authSubmitBtn');
+
+      if (tab === 'login') {
+        loginBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-slate-800 shadow-sm transition";
+        signupBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-800 transition";
+        signupField.classList.add('hidden');
+        submitBtn.innerText = "Acessar Sistema";
+      } else {
+        signupBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-slate-800 shadow-sm transition";
+        loginBtn.className = "flex-1 py-2 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-800 transition";
+        signupField.classList.remove('hidden');
+        submitBtn.innerText = "Concluir Cadastro";
+      }
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const role = document.getElementById('userRoleSelect').value;
+      currentUser.role = role;
+      document.getElementById('retiradaResp').value = `${currentUser.name} (${role})`;
+      
+      showToast(`Bem-vindo, ${currentUser.name}! Perfil: ${role}`);
+      switchScreen(7); // Redirect to Search / Main Hub
+    }
+
+    // Screen 3: AI Scanner Simulation
+    function simulateAIScan() {
+      const loading = document.getElementById('aiLoading');
+      loading.classList.remove('hidden');
+
+      setTimeout(() => {
+        loading.classList.add('hidden');
+        document.getElementById('aiItemName').value = "Solução Tampão pH 7.00";
+        document.getElementById('aiSpecs').value = "0.05 M - Labsynth";
+        document.getElementById('aiExpiry').value = "2027-10-15";
+        document.getElementById('aiQty').value = "1 Frasco (500ml)";
+        document.getElementById('aiLoc').value = "Armário B - Prateleira 3";
+
+        showToast("Rótulo Lido pela IA! Confirme os dados abaixo.");
+      }, 1200);
+    }
+
+    function saveAICadastro() {
+      const name = document.getElementById('aiItemName').value;
+      const loc = document.getElementById('aiLoc').value;
+      const expiry = document.getElementById('aiExpiry').value;
+
+      inventory.push({
+        id: Date.now(),
+        name: name,
+        type: "Reagente",
+        qty: 1,
+        unit: "Frascos",
+        loc: loc,
+        expiry: expiry
+      });
+
+      addTimelineItem(`Cadastro via Rótulo IA: ${name}`, `Confirmado por ${currentUser.name}`);
+      showToast("Item confirmado e cadastrado no inventário!");
+      switchScreen(7);
+    }
+
+    // Screen 4: Manual Item Registration
+    function handleManualCadastro(e) {
+      e.preventDefault();
+      const name = document.getElementById('manualName').value;
+      const qty = parseInt(document.getElementById('manualQty').value);
+      const unit = document.getElementById('manualUnit').value;
+      const loc = document.getElementById('manualLoc').value;
+      const expiry = document.getElementById('manualDate').value || "N/A";
+      const type = document.querySelector('input[name="itemType"]:checked').value;
+
+      inventory.push({
+        id: Date.now(),
+        name: name,
+        type: type,
+        qty: qty,
+        unit: unit,
+        loc: loc,
+        expiry: expiry
+      });
+
+      addTimelineItem(`Cadastro Manual: ${name}`, `Adicionado (${qty} ${unit}) por ${currentUser.name}`);
+      showToast("Material cadastrado com sucesso!");
+      e.target.reset();
+      switchScreen(7);
+    }
+
+    // Screen 5: Item Withdrawal
+    function populateRetiradaDropdown() {
+      const select = document.getElementById('retiradaItemSelect');
+      select.innerHTML = "";
+      inventory.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.innerText = `${item.name} (${item.qty} ${item.unit} dispo.)`;
+        select.appendChild(opt);
+      });
+      updateRetiradaInfo();
+    }
+
+    function updateRetiradaInfo() {
+      const select = document.getElementById('retiradaItemSelect');
+      const itemId = parseInt(select.value);
+      const item = inventory.find(i => i.id === itemId);
+
+      if (item) {
+        document.getElementById('cardItemName').innerText = item.name;
+        document.getElementById('cardItemStock').innerText = `${item.qty} ${item.unit} dispo.`;
+        document.getElementById('cardItemLoc').innerText = item.loc;
+      }
+    }
+
+    function handleRetiradaSubmit(e) {
+      e.preventDefault();
+      const itemId = parseInt(document.getElementById('retiradaItemSelect').value);
+      const qtyRetirar = parseInt(document.getElementById('retiradaQty').value);
+      const dataDev = document.getElementById('retiradaDataDev').value;
+      const item = inventory.find(i => i.id === itemId);
+
+      if (item) {
+        if (qtyRetirar > item.qty) {
+          showToast("Quantidade solicitada maior que o estoque!", true);
+          return;
+        }
+
+        item.qty -= qtyRetirar;
+
+        // Register in pending returns
+        pendingDevolucoes.push({
+          id: Date.now(),
+          item: `${item.name} (${qtyRetirar}x)`,
+          user: currentUser.name,
+          date: dataDev,
+          loc: item.loc
+        });
+
+        addTimelineItem(`Retirada: ${item.name}`, `${qtyRetirar}x por ${currentUser.name} (Devolução: ${dataDev})`);
+        showToast("Retirada registrada com sucesso!");
+        switchScreen(6);
+      }
+    }
+
+    // Screen 6: Pending Loans / Returns Logic
+    function renderPendingDevolucoes() {
+      const list = document.getElementById('pendingDevolucoesList');
+      list.innerHTML = "";
+
+      if (pendingDevolucoes.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-400 italic">Nenhum item pendente de devolução.</p>`;
+        return;
+      }
+
+      pendingDevolucoes.forEach(pd => {
+        const div = document.createElement('div');
+        div.className = "bg-white border border-slate-200 rounded-xl p-3 shadow-sm space-y-1.5";
+        div.innerHTML = `
+          <div class="flex justify-between items-start">
+            <span class="font-bold text-xs text-slate-800">${pd.item}</span>
+            <span class="text-[10px] text-teal-700 font-semibold bg-teal-50 px-2 py-0.5 rounded">Devolver até: ${pd.date}</span>
+          </div>
+          <p class="text-[11px] text-slate-500">Responsável: <strong>${pd.user}</strong></p>
+          <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+            <span class="text-[10px] text-slate-400"><i class="fa-solid fa-location-dot"></i> ${pd.loc}</span>
+            <button onclick="devolverItem(${pd.id})" class="text-[10px] bg-teal-600 hover:bg-teal-500 text-white font-medium px-2.5 py-1 rounded-lg transition">
+              Registrar Devolução
+            </button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function devolverItem(pendingId) {
+      const pdIndex = pendingDevolucoes.findIndex(p => p.id === pendingId);
+      if (pdIndex !== -1) {
+        const itemInfo = pendingDevolucoes[pdIndex];
+        pendingDevolucoes.splice(pdIndex, 1);
+        addTimelineItem(`Devolução: ${itemInfo.item}`, `Devolvido por ${itemInfo.user}`);
+        showToast("Devolução registrada no sistema!");
+        renderPendingDevolucoes();
+      }
+    }
+
+    function descartarItem(nomeItem) {
+      addTimelineItem(`Descarte de Reagente Vencido`, `${nomeItem} descartado com segurança.`);
+      showToast(`${nomeItem} enviado para descarte e removido!`);
+    }
+
+    // Screen 7: Smart Search & Anti-Duplicate Warning
+    function handleSearch() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const resultsContainer = document.getElementById('searchResults');
+      const warningText = document.getElementById('duplicateWarningText');
+      const warningBox = document.getElementById('duplicateWarningBox');
+
+      resultsContainer.innerHTML = "";
+
+      const filtered = inventory.filter(i => 
+        i.name.toLowerCase().includes(query) || 
+        i.type.toLowerCase().includes(query) || 
+        i.loc.toLowerCase().includes(query)
+      );
+
+      if (query.length > 0) {
+        if (filtered.length > 0) {
+          const match = filtered[0];
+          warningBox.className = "bg-emerald-50 border-2 border-emerald-400/80 rounded-2xl p-3 shadow-sm flex items-start gap-2.5";
+          warningText.innerHTML = `<strong>✅ O item já existe no laboratório!</strong><br>Encontrados <strong>${match.qty} ${match.unit}</strong> de "${match.name}" na localização: <em>${match.loc}</em>. Evite compras desnecessárias!`;
+        } else {
+          warningBox.className = "bg-amber-50 border-2 border-amber-400/80 rounded-2xl p-3 shadow-sm flex items-start gap-2.5";
+          warningText.innerHTML = `<strong>ℹ️ Item não localizado no inventário atual.</strong><br>Nenhum registro correspondente a "${query}". Liberação de compra permitida.`;
+        }
+      } else {
+        warningBox.className = "bg-emerald-50 border-2 border-emerald-400/80 rounded-2xl p-3 shadow-sm flex items-start gap-2.5";
+        warningText.innerHTML = `Digite o nome do item para verificar se já existe em alguma prateleira antes de autorizar a compra!`;
+      }
+
+      // Render search items
+      filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "bg-white border border-slate-200 rounded-xl p-3 shadow-sm space-y-1";
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-xs text-slate-800">${item.name}</span>
+            <span class="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">${item.type}</span>
+          </div>
+          <p class="text-[11px] text-slate-600">Quantidade: <strong>${item.qty} ${item.unit}</strong> | Validade: <strong>${item.expiry}</strong></p>
+          <p class="text-[10px] text-teal-700 flex items-center gap-1">
+            <i class="fa-solid fa-location-dot"></i> ${item.loc}
+          </p>
+        `;
+        resultsContainer.appendChild(div);
+      });
+    }
+
+    // Dynamic History Timeline Logging
+    function addTimelineItem(title, subtitle) {
+      const container = document.getElementById('timelineContainer');
+      const div = document.createElement('div');
+      div.className = "relative";
+      div.innerHTML = `
+        <div class="absolute -left-[21px] top-0 w-2.5 h-2.5 rounded-full bg-teal-500 ring-4 ring-slate-50"></div>
+        <div class="text-[11px]">
+          <span class="font-bold text-slate-800">${title}</span>
+          <p class="text-slate-500 text-[10px]">${subtitle} &bull; Agora</p>
+        </div>
+      `;
+      container.insertBefore(div, container.firstChild);
+    }
+
+    // Set Initial Default Date for Return Pickers
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date();
+      today.setDate(today.getDate() + 3);
+      const isoDate = today.toISOString().split('T')[0];
+      document.getElementById('retiradaDataDev').value = isoDate;
+    });
+  </script>
+</body>
+</html>
