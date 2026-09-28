@@ -167,35 +167,35 @@ Aplicativo mobile para cadastrar, localizar e controlar reagentes, vidraria e eq
 | RNF12 | **100%** do tráfego via **HTTPS (TLS 1.2+)**. |
 | RNF13 | **100%** das coleções do Firestore protegidas por Security Rules que aplicam a matriz de permissões; **0 regras** `allow read, write: if true`. |
 | RNF14 | Link de recuperação de senha expira em **1 h**. |
-| RNF26 | **0 chaves de API** versionadas no repositório (chaves em variáveis de ambiente / `.env` no `.gitignore`). |
+| RNF15 | **0 chaves de API** versionadas no repositório (chaves em variáveis de ambiente / `.env` no `.gitignore`). |
 
 ### Disponibilidade e dados
 
 | ID | Requisito |
 |---|---|
-| RNF15 | Disponibilidade mensal de **≥ 99%** (máx. ~7 h fora do ar por mês). |
-| RNF16 | Exportação do inventário em JSON **1 vez por semana**, mantendo as **4 últimas** cópias (backups agendados do Firestore exigem plano pago). |
-| RNF27 | Operar dentro da cota gratuita do Firestore: **≤ 50.000 leituras** e **≤ 20.000 gravações** por dia, com listas paginadas em **20 itens** por página. |
-| RNF28 | **0 bytes** gravados em Cloud Storage no MVP (o Storage exige plano Blaze). |
-| RNF17 | Histórico de movimentação retido por **≥ 5 anos**. |
-| RNF18 | Alerta padrão de vencimento **30 dias** antes, configurável entre **7 e 180 dias**. |
+| RNF16 | Disponibilidade mensal de **≥ 99%** (máx. ~7 h fora do ar por mês). |
+| RNF17 | Exportação do inventário em JSON **1 vez por semana**, mantendo as **4 últimas** cópias (backups agendados do Firestore exigem plano pago). |
+| RNF18 | Operar dentro da cota gratuita do Firestore: **≤ 50.000 leituras** e **≤ 20.000 gravações** por dia, com listas paginadas em **20 itens** por página. |
+| RNF19 | **0 bytes** gravados em Cloud Storage no MVP (o Storage exige plano Blaze). |
+| RNF20 | Histórico de movimentação retido por **≥ 5 anos**. |
+| RNF21 | Alerta padrão de vencimento **30 dias** antes, configurável entre **7 e 180 dias**. |
 
 ### Compatibilidade e usabilidade
 
 | ID | Requisito |
 |---|---|
-| RNF19 | Funcionar em **Android 10+** e **iOS 15+**. |
-| RNF20 | Contraste de texto **≥ 4,5:1** (WCAG AA). |
-| RNF21 | Áreas de toque com **≥ 48 × 48 dp**. |
-| RNF22 | Registrar uma retirada em **≤ 4 toques** a partir da tela do item. |
-| RNF23 | Um usuário novo deve cadastrar o primeiro item em **≤ 2 min** sem treinamento (teste com **5 usuários**). |
+| RNF22 | Funcionar em **Android 10+** e **iOS 15+**. |
+| RNF23 | Contraste de texto **≥ 4,5:1** (WCAG AA). |
+| RNF24 | Áreas de toque com **≥ 48 × 48 dp**. |
+| RNF25 | Registrar uma retirada em **≤ 4 toques** a partir da tela do item. |
+| RNF26 | Um usuário novo deve cadastrar o primeiro item em **≤ 2 min** sem treinamento (teste com **5 usuários**). |
 
 ### Manutenibilidade
 
 | ID | Requisito |
 |---|---|
-| RNF24 | Cobertura de testes automatizados **≥ 70%** nas regras de negócio. |
-| RNF25 | Nova versão testável em **≤ 15 min** via Expo Go ou build do EAS. |
+| RNF27 | Cobertura de testes automatizados **≥ 70%** nas regras de negócio. |
+| RNF28 | Nova versão testável em **≤ 15 min** via Expo Go ou build do EAS. |
 
 ---
 
