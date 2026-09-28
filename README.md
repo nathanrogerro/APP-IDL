@@ -1,13 +1,7 @@
 # 🧪 Inventário do Laboratório — PRD
 
-> Documento de Requisitos do Produto (PRD) para um app de controle de inventário de laboratório com cadastro assistido por IA a partir da foto do rótulo.
+Documento de Requisitos do Produto (PRD) para um app de controle de inventário de laboratório com cadastro assistido por IA a partir da foto do rótulo.
 
-| Campo | Valor |
-|---|---|
-| **Versão** | 1.1 |
-| **Status** | Rascunho |
-| **Última atualização** | 27/09/2026 |
-| **Responsável** | _a definir_ |
 
 ---
 
