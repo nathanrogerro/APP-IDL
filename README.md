@@ -6,6 +6,7 @@ equipamentos de laboratório.
 ## 📚 Documentação
 
 - [PRD — Product Requirements Document](docs/01-PRD.md)
+- [ADRs — Architecture Decision Records](docs/03-ADRs)
 
 ## 🖥️ Protótipo
 
