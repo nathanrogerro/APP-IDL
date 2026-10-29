@@ -1,13 +1,126 @@
-# 🧪 Inventário do Laboratório
+# 🧪 LabSto — Inventário do Laboratório
 
-Aplicativo mobile para controle de inventário de materiais e
-equipamentos de laboratório.
-
-## 📚 Documentação
-
-- [PRD — Product Requirements Document](docs/01-PRD.md)
-- [ADRs — Architecture Decision Records](docs/03-ADRs)
+Aplicativo mobile para controle de inventário de reagentes, vidraria e equipamentos de laboratório, com **cadastro assistido por IA a partir da foto do rótulo**, controle de validade, empréstimos e histórico de movimentação.
 
 ## 🖥️ Protótipo
 
 - [Protótipo das telas](docs/02-labsto_mobile_app_prototype.html)
+
+
+---
+
+## ▶️ Como executar
+
+### Pré-requisitos
+
+- [Node.js](https://nodejs.org/) **20 LTS ou superior** (`node -v` para conferir)
+- [Git](https://git-scm.com/)
+- Aplicativo **Expo Go** no celular ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) · [iOS](https://apps.apple.com/app/expo-go/id982107779))
+- Celular e computador **na mesma rede Wi-Fi** (ou use o modo túnel, abaixo)
+
+### Passo a passo
+
+```bash
+git clone https://github.com/nathanrogerro/APP-IDL.git
+cd APP-IDL
+npm install
+npx expo start
+```
+
+1. Um **QR code** aparece no terminal.
+2. **Android:** abra o Expo Go e toque em "Scan QR code". **iOS:** abra a câmera do iPhone e aponte para o QR code.
+3. O app abre no celular. Na primeira execução, o banco local é criado e preenchido com os dados de exemplo.
+
+**O QR code não conecta?** (comum em redes da universidade, que isolam os aparelhos) Pare o servidor com `Ctrl+C` e rode:
+
+```bash
+npx expo start --tunnel
+```
+
+### Usuários de exemplo (Entrega 2)
+
+Nesta entrega **não há autenticação real** (ela faz parte da Entrega 3, conforme o enunciado). Na tela de login, digite um dos e-mails abaixo; **qualquer senha** é aceita. Cada usuário tem um perfil diferente, para demonstrar a [matriz de permissões](docs/01-PRD.md#matriz-de-permissões).
+
+| E-mail | Perfil |
+|---|---|
+| `admin@labsto.dev` | Administrador |
+| `tecnico@labsto.dev` | Técnico |
+| `estudante@labsto.dev` | Estudante |
+
+### Dados de exemplo
+
+O app já vem com itens, locais e empréstimos de exemplo, incluindo reagentes vencidos, reagentes vencendo e um empréstimo atrasado, para que o painel e os alertas tenham conteúdo. Para voltar ao estado inicial: **Perfil → Restaurar dados de exemplo**.
+
+### Variáveis de ambiente
+
+A **Entrega 2 não precisa de nenhuma variável de ambiente**.
+
+A partir da Entrega 3, copie `.env.example` para `.env` e preencha os valores. O arquivo `.env` está no `.gitignore` e **nunca** é versionado.
+
+| Variável | Onde | Para quê |
+|---|---|---|
+| `EXPO_PUBLIC_FIREBASE_*` | App (`.env`) | Configuração do projeto Firebase. Não é segredo: o acesso aos dados é controlado pelas Security Rules |
+| `EXPO_PUBLIC_IA_URL` | App (`.env`) | Endereço do servidor de IA no Render |
+| `GEMINI_API_KEY` | **Somente** no painel do Render | Chave do Gemini. Nunca fica no app nem no repositório ([ADR-006](docs/03-ADRs/ADR-006-Integracao-com-a-IA.md)) |
+| `GEMINI_MODEL`, `FIREBASE_PROJECT_ID` | Painel do Render | Configuração do servidor de IA |
+
+---
+
+## 🧱 Tecnologias
+
+| Área | Tecnologia | Decisão |
+|---|---|---|
+| App | React Native + **Expo** (Expo Go), JavaScript | Exigência da disciplina |
+| Navegação | **Expo Router** | [ADR-005](docs/03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md) |
+| Banco local | **expo-sqlite** | [ADR-002](docs/03-ADRs/ADR-002-Persistencia-local-remota.md) |
+| Banco remoto | **Firebase Firestore** (Entrega 3) | [ADR-002](docs/03-ADRs/ADR-002-Persistencia-local-remota.md), [ADR-003](docs/03-ADRs/ADR-003-Sincronização-dos-dados.md) |
+| Autenticação | **Firebase Authentication** (Entrega 3) | [ADR-005](docs/03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md), [ADR-008](docs/03-ADRs/ADR-008-Atribuicao-de-perfis.md) |
+| IA | **Google Gemini** via servidor no **Render** (Entrega 3) | [ADR-006](docs/03-ADRs/ADR-006-Integracao-com-a-IA.md) |
+| API externa | **PubChem** (Entrega 3) | [ADR-007](docs/03-ADRs/ADR-007-API-externa-PubChem.md) |
+| Recursos nativos | Câmera (`expo-camera`) e notificações locais (`expo-notifications`) | [PRD — RF08, RF20](docs/01-PRD.md) |
+| Estado | React Context (apenas sessão) + hooks | [ADR-004](docs/03-ADRs/ADR-004-Arquitetura-em-camadas.md) |
+
+---
+
+## 🏗️ Arquitetura
+
+O app é organizado em quatro camadas. Cada uma só conversa com a de baixo:
+
+```
+Telas (app/)  →  Hooks (hooks/)  →  Serviços (services/)  →  Repositórios (data/)
+ exibem          carregando /        regras de negócio        SQLite (Entrega 2)
+ dados           erro / vazio        e transações             + Firestore (Entrega 3)
+```
+
+Com isso, a troca do banco local para o Firestore na Entrega 3 fica restrita à pasta `data/`, sem reescrever as telas. Detalhes, alternativas consideradas e consequências na [ADR-004](docs/03-ADRs/ADR-004-Arquitetura-em-camadas.md).
+
+### Estrutura do repositório
+
+```
+app/            telas e rotas (Expo Router)
+components/     componentes visuais reutilizáveis
+hooks/          acesso a dados para as telas
+services/       regras de negócio
+data/           SQLite: esquema, dados de exemplo e repositórios
+context/        sessão do usuário
+constants/      cores e estilos
+server/         servidor de IA para o Render (Entrega 3)
+docs/           PRD, ADRs, protótipo e diário de IA
+```
+
+---
+
+## 📚 Documentação
+
+- [PRD — Documento de Requisitos do Produto](docs/01-PRD.md) (v2.0, revisado na Entrega 2 — ver [histórico de revisões](docs/01-PRD.md#11-histórico-de-revisões))
+- [Protótipo das telas (Entrega 1)](docs/02-labsto_mobile_app_prototype.html)
+- Decisões de arquitetura (ADRs):
+  - [ADR-001 — Modelagem dos dados](docs/03-ADRs/ADR-001-Modelagem-de-dados.md)
+  - [ADR-002 — Persistência local e remota](docs/03-ADRs/ADR-002-Persistencia-local-remota.md)
+  - [ADR-003 — Sincronização dos dados](docs/03-ADRs/ADR-003-Sincronização-dos-dados.md)
+  - [ADR-004 — Arquitetura em camadas](docs/03-ADRs/ADR-004-Arquitetura-em-camadas.md)
+  - [ADR-005 — Navegação e rotas protegidas](docs/03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md)
+  - [ADR-006 — Integração com a IA](docs/03-ADRs/ADR-006-Integracao-com-a-IA.md)
+  - [ADR-007 — API externa: PubChem](docs/03-ADRs/ADR-007-API-externa-PubChem.md)
+  - [ADR-008 — Atribuição de perfis](docs/03-ADRs/ADR-008-Atribuicao-de-perfis.md)
+- [Diário de bordo de uso de IA](docs/Diário-de-bordo-de-uso-de-IA.md)
