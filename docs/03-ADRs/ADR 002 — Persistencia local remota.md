@@ -1,6 +1,6 @@
 # ADR 002 — Persistência local e remota
 
-**Status:** Aceita · **Data:** 28/09 · **Revisada:** 30/10 (acrescentadas as fases de implementação e a alternativa AsyncStorage)
+**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (acrescentadas as fases de implementação e a alternativa AsyncStorage)
 
 ## Resumo
 
