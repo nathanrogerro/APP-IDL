@@ -13,9 +13,9 @@ Aplicativo mobile para controle de inventário de reagentes, vidraria e equipame
 
 ### Pré-requisitos
 
-- [Node.js](https://nodejs.org/) **20 LTS ou superior** (`node -v` para conferir)
+- [Node.js](https://nodejs.org/) **22.13 ou superior** (LTS 22 ou 24; `node -v` para conferir). O Expo SDK 58 não funciona com o Node 20.
 - [Git](https://git-scm.com/)
-- Aplicativo **Expo Go** no celular ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) · [iOS](https://apps.apple.com/app/expo-go/id982107779))
+- Aplicativo **Expo Go** atualizado no celular ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) · [iOS](https://apps.apple.com/app/expo-go/id982107779)). O projeto usa o **Expo SDK 58**.
 - Celular e computador **na mesma rede Wi-Fi** (ou use o modo túnel, abaixo)
 
 ### Passo a passo
@@ -37,19 +37,26 @@ npx expo start
 npx expo start --tunnel
 ```
 
+Na primeira vez, o Expo pergunta se pode instalar o pacote `@expo/ngrok`, necessário para o túnel. Responda `Y` (sim).
+
 ### Usuários de exemplo (Entrega 2)
 
-Nesta entrega **não há autenticação real** (ela faz parte da Entrega 3, conforme o enunciado). Na tela de login, digite um dos e-mails abaixo; **qualquer senha** é aceita. Cada usuário tem um perfil diferente, para demonstrar a [matriz de permissões](docs/01-PRD.md#matriz-de-permissões).
+Nesta entrega **não há autenticação real** (ela faz parte da Entrega 3, conforme o enunciado). Na tela de login, digite um dos e-mails abaixo; **qualquer senha** é aceita. Os botões "Contas de exemplo", no fim da tela de login, preenchem os campos automaticamente. Cada usuário tem um perfil diferente, para demonstrar a [matriz de permissões](docs/01-PRD.md#matriz-de-permissões).
 
 | E-mail | Perfil |
 |---|---|
 | `admin@labsto.dev` | Administrador |
 | `tecnico@labsto.dev` | Técnico |
 | `estudante@labsto.dev` | Estudante |
+| `bruno@labsto.dev` | Estudante com **conta desativada** (o login é recusado) |
+
+Contas criadas pela tela "Criar conta" entram como Estudante e ficam salvas no aparelho.
 
 ### Dados de exemplo
 
 O app já vem com itens, locais e empréstimos de exemplo, incluindo reagentes vencidos, reagentes vencendo e um empréstimo atrasado, para que o painel e os alertas tenham conteúdo. Para voltar ao estado inicial: **Perfil → Restaurar dados de exemplo**.
+
+Para mostrar o estado de erro das listagens, ative **Perfil → Simular erro nas listagens**: as listas passam a exibir a mensagem de erro com o botão "Tentar novamente". As duas opções aparecem no Expo Go (modo de desenvolvimento).
 
 ### Variáveis de ambiente
 
@@ -63,6 +70,8 @@ A partir da Entrega 3, copie `.env.example` para `.env` e preencha os valores. O
 | `EXPO_PUBLIC_IA_URL` | App (`.env`) | Endereço do servidor de IA no Render |
 | `GEMINI_API_KEY` | **Somente** no painel do Render | Chave do Gemini. Nunca fica no app nem no repositório ([ADR-006](docs/03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)) |
 | `GEMINI_MODEL`, `FIREBASE_PROJECT_ID` | Painel do Render | Configuração do servidor de IA |
+
+**Primeiro administrador (Entrega 3):** toda conta nova é criada como Estudante ([ADR-008](docs/03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md)). Para definir o primeiro Administrador, cadastre-se pelo app, abra o [console do Firebase](https://console.firebase.google.com/) → Firestore → coleção `usuarios` → documento da sua conta, e altere o campo `perfil` para `admin`. Os demais perfis são alterados pelo próprio app, na tela Usuários.
 
 ---
 
@@ -103,7 +112,8 @@ hooks/          acesso a dados para as telas
 services/       regras de negócio
 data/           SQLite: esquema, dados de exemplo e repositórios
 context/        sessão do usuário
-constants/      cores e estilos
+constants/      cores, estilos e textos fixos
+utils/          funções de data, texto e validação
 server/         servidor de IA para o Render (Entrega 3)
 docs/           PRD, ADRs, protótipo e diário de IA
 ```

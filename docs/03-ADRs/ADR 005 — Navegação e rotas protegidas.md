@@ -66,7 +66,8 @@ Telas e ações restritas por perfil, conforme a [matriz de permissões](../01-P
 | Inventário → Detalhe | `id` | `router.push('/item/' + item.id)`; no destino, `useLocalSearchParams()` |
 | Detalhe → Retirada | `itemId` | `router.push('/retirada/' + id)` |
 | Detalhe → Editar | `id` | `router.push({ pathname: '/item/form', params: { id } })` |
-| Painel → Inventário filtrado | `filtro` | `router.push({ pathname: '/inventario', params: { filtro: 'vencendo' } })` |
+| Painel → Inventário filtrado | `filtro` | `router.navigate({ pathname: '/inventario', params: { filtro: 'vencendo' } })` (`navigate`, porque o destino é uma aba) |
+| Painel → Empréstimos atrasados | `filtro` | `router.navigate({ pathname: '/emprestimos', params: { filtro: 'atrasados' } })` |
 
 Os parâmetros carregam **apenas IDs e filtros**, nunca o objeto inteiro: a tela de destino busca o dado atualizado pelo hook. Assim, a tela nunca mostra uma cópia velha.
 

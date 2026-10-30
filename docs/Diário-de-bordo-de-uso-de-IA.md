@@ -3,7 +3,7 @@
 | Etapa | Registros |
 |---|---|
 | Entrega 1 — Tema, PRD, ADRs e protótipo | [01 a 05](#registro-01--definição-do-problema-e-público-alvo) |
-| Entrega 2 — Revisão dos documentos e implementação das telas | [06 a 13](#entrega-2) |
+| Entrega 2 — Revisão dos documentos e implementação das telas | [06 a 15](#entrega-2) |
 
 ---
 
@@ -472,3 +472,87 @@ Nada foi recusado.
 ### Por quê
 
 Os erros estavam em textos gerados pela própria IA, alguns em pontos que o professor pode perguntar na apresentação (como a chave do Firebase no app). Isso mostra que o conteúdo gerado precisa ser conferido antes da entrega, e a equipe passou a pedir uma verificação cruzada sempre que vários documentos são alterados juntos.
+
+---
+
+## Registro 14 — Codificação das telas a partir dos documentos
+
+### O que foi pedido à IA
+
+A equipe solicitou à IA que codificasse as telas usando os documentos do repositório como especificação:
+
+- telas, rotas e parâmetros da seção 9 do PRD e da ADR-005;
+- coleções e campos da ADR-001, gravados no SQLite (ADR-002);
+- arquitetura em camadas da ADR-004;
+- regra de perfis da ADR-008 e matriz de permissões do PRD;
+- usuários e dados de exemplo descritos no README.
+
+### O que veio da IA
+
+A IA criou o projeto com o Expo SDK 58 e implementou as 13 telas, a camada de dados com uma tabela por coleção, as regras de negócio nos serviços, os hooks com os estados de carregamento, vazio e erro, e a sessão no `AuthContext`.
+
+Antes de escrever o código, a IA conferiu as funções nos pacotes instalados, porque o SDK 58 é mais novo do que o conhecimento dela. Duas mudanças apareceram: o componente de abas passou a ser importado de `expo-router/js-tabs`, e o `SafeAreaView` do React Native foi descontinuado.
+
+A IA também sugeriu alguns detalhes que não estavam nos documentos:
+
+- bloquear no próprio banco (com *triggers* do SQLite) qualquer alteração ou exclusão do histórico, além das Security Rules previstas para a Entrega 3 (RNF20);
+- impedir a exclusão de um item com empréstimo em aberto;
+- atalhos de data na retirada ("+7 dias") e quantidade padrão 1, deixando a retirada em 2 toques a partir do detalhe do item (RNF25);
+- uma ferramenta "Simular erro nas listagens" no Perfil, para mostrar o estado de erro na apresentação;
+- uma conta de exemplo desativada, para demonstrar o bloqueio de login (US12).
+
+### O que foi aceito
+
+O código e os detalhes acima. O README, o PRD (seção 9) e as ADR-002 e ADR-005 foram atualizados com o que a implementação acrescentou.
+
+### O que foi recusado ou alterado
+
+Nada foi recusado. As correções feitas depois dos testes estão no Registro 15.
+
+### Por quê
+
+Usar os documentos como especificação manteve o código coerente com o que foi decidido nas ADRs. A conferência das funções nos pacotes instalados evitou código baseado em versões antigas do Expo, que não funcionaria no Expo Go atual.
+
+---
+
+## Registro 15 — Testes do código antes da entrega
+
+### O que foi pedido à IA
+
+A equipe solicitou à IA que testasse o app antes da entrega: as regras de negócio, a navegação entre as telas e a instalação a partir de um clone limpo, seguindo apenas o README.
+
+### O que veio da IA
+
+A IA executou quatro verificações:
+
+1. **Regras de negócio:** 26 casos testados contra um banco SQLite real (saldo, devolução com atraso, duplicidade, exclusão lógica, histórico imutável, transação desfeita em caso de falha). Duas falhas apareceram e eram do próprio teste, não do app: a busca por "%" encontrou 6 itens porque esses nomes contêm "%" (ex.: "Etanol 70%"), e a busca por "pipeta" também encontrou "Micropipeta".
+2. **Navegação:** um robô percorreu 27 telas e estados no navegador, tirando prints. Foram encontrados três problemas reais: o botão "Registrar devolução" ficava dentro de outro botão (o cartão inteiro), o que confunde leitores de tela; os textos da barra de abas apareciam cortados; e, ao salvar um formulário com erro, o aviso ficava no topo, fora da vista.
+3. **Câmera:** o fluxo foi testado com a permissão negada (a tela explica e oferece o cadastro manual) e concedida (a foto é tirada e o cadastro continua).
+4. **Clone limpo:** a instalação falhou com um conflito de versões: o npm instalava o `react-dom` 19.3.1, que exige o React 19.3.1, enquanto o Expo SDK 58 fixa o React em 19.3.0. A IA também encontrou que o README pedia o Node 20, mas o Expo SDK 58 exige o Node 22.13 ou mais novo.
+
+### O que foi aceito
+
+Todas as correções:
+
+- o cartão de empréstimo passou a ter a área de informações e o botão de devolução como toques separados;
+- o tamanho do texto da barra de abas voltou ao padrão;
+- o formulário rola até o topo quando há erros;
+- o `react-dom` foi fixado na mesma versão do React;
+- o README passou a pedir o Node 22.13 ou mais novo, e o `package.json` passou a avisar quando o Node for antigo.
+
+Depois das correções, a instalação a partir do clone limpo (`npm install` e `npm ci`) e o empacotamento para Android e iOS funcionaram.
+
+Numa segunda revisão, pedida pela equipe para conferir todos os arquivos contra a documentação, a IA:
+
+- passou o ESLint com as regras de React e de hooks nos 69 arquivos de código, sem nenhum erro;
+- testou mais 18 fluxos no navegador (editar item, aviso de duplicidade, consumo, exclusão bloqueada, locais, perfis de usuário, prazo do alerta, restauração dos dados e conta desativada), todos sem erro;
+- encontrou e corrigiu quatro pontos: a lista de empréstimos dentro do detalhe do item não mostrava os estados de carregamento e erro (RNF29); a regra que impede excluir item com empréstimo aberto não estava no PRD (RF11); os locais com acento ("Ácidos") apareciam fora da ordem alfabética; e o README não avisava que o modo túnel pede para instalar o pacote `@expo/ngrok`.
+
+### O que foi recusado ou alterado
+
+Nada foi recusado.
+
+### Por quê
+
+O conflito do `react-dom` e a versão do Node só aparecem numa instalação do zero, exatamente o que o professor fará ao clonar o repositório. Sem o teste, o app funcionaria no computador de quem o criou e falharia na correção.
+

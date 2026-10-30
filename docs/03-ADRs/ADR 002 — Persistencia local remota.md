@@ -42,7 +42,7 @@ com `WHERE nomeBusca LIKE '%etan%'`.
 | **Entrega 2** (30/10) | Somente **SQLite**, como banco único | O enunciado da Entrega 2 exige apenas persistência local. O SQLite já é o banco definitivo do lado do aparelho, então nada é descartado depois |
 | **Entrega 3** (30/11) | SQLite passa a ser **cache** do Firestore | Só os repositórios mudam: passam a gravar no Firestore e a sincronizar ([ADR-003](ADR%20003%20—%20Sincronização%20dos%20dados.md)) |
 
-As tabelas do SQLite seguem exatamente as coleções da [ADR-001](ADR%20001%20—%20Modelagem%20de%20dados.md). A versão do esquema é controlada com `PRAGMA user_version`, para aplicar alterações de tabela sem apagar os dados do aparelho.
+As tabelas do SQLite seguem exatamente as coleções da [ADR-001](ADR%20001%20—%20Modelagem%20de%20dados.md). Além delas, existe a tabela local `configuracoes` (pares chave/valor do aparelho, como a sessão aberta), que não é sincronizada. A versão do esquema é controlada com `PRAGMA user_version`, para aplicar alterações de tabela sem apagar os dados do aparelho.
 
 ## Consequências
 

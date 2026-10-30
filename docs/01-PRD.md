@@ -95,7 +95,7 @@ Para reagentes, o app consulta a base pública **PubChem** e mostra fórmula, ma
 | RF08 | O sistema deve permitir **tirar foto do rótulo** e enviar à LLM para extrair nome, concentração, fabricante, lote, número CAS e validade. A foto é usada só na extração e **não é armazenada**. A chamada passa por um servidor intermediário que guarda a chave da LLM ([ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)). | Alta |
 | RF09 | Campos preenchidos pela IA devem aparecer **destacados como sugestão** e só são salvos após confirmação do usuário. | Alta |
 | RF10 | ~~Ler código de barras~~ — **removido na revisão do PRD** (ver [histórico](#11-histórico-de-revisões)). | — |
-| RF11 | O sistema deve permitir **editar** e **excluir** itens. A exclusão é **lógica** (o item é arquivado e some das listas, mas o histórico é preservado). | Alta |
+| RF11 | O sistema deve permitir **editar** e **excluir** itens. A exclusão é **lógica** (o item é arquivado e some das listas, mas o histórico é preservado). Um item com empréstimo em aberto não pode ser excluído até a devolução. | Alta |
 | RF12 | O sistema deve permitir **cadastrar, editar e excluir locais** (sala → armário → prateleira). Um local só pode ser excluído se não houver itens nele. | Alta |
 | RF13 | O sistema deve **avisar possível duplicidade** ao cadastrar item com nome e fabricante já existentes, com link para o item existente. | Média |
 
@@ -353,7 +353,7 @@ As telas abaixo substituem o fluxo do protótipo da Entrega 1. Foram **acrescent
 | 4 | Formulário de item | `/(app)/item/form` | `id` (opcional: presente = edição) | RF07, RF09, RF11, RF13 | — |
 | 5 | Cadastro por foto | `/(app)/item/foto` | — | RF08 | — |
 | 6 | Retirada / consumo | `/(app)/retirada/[itemId]` | `itemId` | RF14, RF16 | — |
-| 7 | Empréstimos | `/(app)/(tabs)/emprestimos` | — | RF15, RF17 | Sim |
+| 7 | Empréstimos | `/(app)/(tabs)/emprestimos` | `filtro` (opcional: `abertos`, `atrasados`, `meus`) | RF15, RF17 | Sim |
 | 8 | Locais | `/(app)/locais` | — | RF12 | Sim |
 | 9 | Perfil e configurações | `/(app)/(tabs)/perfil` | — | RF06, RF18, RF20, RF25 | — |
 | 10 | Usuários (só Admin) | `/(app)/usuarios` | — | RF05 | Sim |
@@ -423,7 +423,7 @@ Revisão feita ao implementar as telas e ao conferir o PRD contra o enunciado da
 | RF07, RF08 | Acrescentados **número CAS**, concentração e estoque mínimo; local passa a referenciar o cadastro de locais | O CAS permite a consulta à PubChem; o estoque mínimo é usado pelo RF21 |
 | RF08 | A chamada à LLM passa por um servidor intermediário | Manter a chave fora do app ([ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)) |
 | RF10, RNF03 | **Removidos** (código de barras) | Corte de escopo para priorizar os requisitos obrigatórios da disciplina |
-| RF11 | "Arquivar" passa a ser apresentado como **excluir (exclusão lógica)** | O enunciado exige exclusão disponível na interface; a exclusão lógica também é necessária para a sincronização ([ADR-003](03-ADRs/ADR%20003%20—%20Sincronização%20dos%20dados.md)) |
+| RF11 | "Arquivar" passa a ser apresentado como **excluir (exclusão lógica)**; item com empréstimo em aberto não pode ser excluído | O enunciado exige exclusão disponível na interface; a exclusão lógica também é necessária para a sincronização ([ADR-003](03-ADRs/ADR%20003%20—%20Sincronização%20dos%20dados.md)). O bloqueio evita empréstimos abertos de um item que sumiu do inventário |
 | RF12 | Acrescentados editar e excluir locais | CRUD completo na interface |
 | RF16 | Consumo registrado na mesma tela da retirada | Menos telas e menos toques (RNF25) |
 | RF20 | "Notificação push" → **notificação local** | Push remoto não funciona no Expo Go |

@@ -68,6 +68,7 @@ data/                    db.js (abertura e esquema do SQLite), seed.js,
                          *Repository.js (um por coleção da ADR-001)
 context/                 AuthContext.js
 constants/               cores, espaçamentos, textos fixos
+utils/                   funções puras de data, texto e validação (usadas por todas as camadas)
 ```
 
 ### Tratamento de erros
