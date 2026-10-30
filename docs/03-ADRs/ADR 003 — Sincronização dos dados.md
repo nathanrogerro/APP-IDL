@@ -1,6 +1,6 @@
 # ADR 003 — Sincronização dos dados
 
-**Status:** Aceita · **Data:** 28/09 · **Revisada:** 30/10 (corrigidas a detecção de exclusões e a origem do `updatedAt`)
+**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (corrigidas a detecção de exclusões e a origem do `updatedAt`)
 
 ## Resumo
 
