@@ -112,7 +112,7 @@ docs/           PRD, ADRs, protótipo e diário de IA
 
 ## 📚 Documentação
 
-- [PRD — Documento de Requisitos do Produto](docs/01-PRD.md) (v2.0, revisado na Entrega 2 — ver [histórico de revisões](docs/01-PRD.md#11-histórico-de-revisões))
+- [PRD — Documento de Requisitos do Produto](docs/01-PRD.md)
 - [Protótipo das telas (Entrega 1)](docs/02-labsto_mobile_app_prototype.html)
 - Decisões de arquitetura (ADRs):
   - [ADR-001 — Modelagem dos dados](docs/03-ADRs/ADR-001-Modelagem-de-dados.md)
