@@ -1,6 +1,6 @@
 # ADR 007 — API externa: PubChem
 
-**Status:** Aceita · **Data:** 25/10 · **Implementação:** Entrega 3
+**Status:** Aceita · **Data:** 25/10 · **Implementação:** Entrega 3 · **Revisada:** 30/10 (cache no banco local em arquivo, [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md))
 
 ## Resumo
 
@@ -33,7 +33,7 @@ No contexto de um inventário de laboratório que precisa consumir ao menos uma 
 
 1. A consulta é feita **apenas para itens do tipo reagente**, ao abrir o detalhe.
 2. Busca **pelo número CAS** quando informado; sem CAS, tenta pelo nome. A PubChem indexa nomes em inglês, então "Acetona" pode não ser encontrada, mas o CAS `67-64-1` é, porque é um identificador único e internacional do composto. Por isso o CAS foi acrescentado ao cadastro (RF07) e à extração por IA (RF08).
-3. A resposta é guardada em uma tabela de **cache local** no SQLite (`cache_pubchem`, chave = CAS ou nome), válida por 30 dias. Ela não é sincronizada com o Firestore.
+3. A resposta é guardada em um **cache local** no aparelho (lista `cachePubchem` do arquivo de dados, chave = CAS ou nome), válida por 30 dias. Ela não é sincronizada com o Firestore.
 4. Os códigos de pictograma (GHS02, GHS05...) são traduzidos para português por uma tabela fixa no app ("Inflamável", "Corrosivo"...).
 5. A chamada fica em `services/pubchemService.js` ([ADR-004](ADR%20004%20—%20Arquitetura%20em%20camadas.md)).
 

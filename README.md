@@ -34,10 +34,12 @@ npx expo start
 **O QR code não conecta?** (comum em redes da universidade, que isolam os aparelhos) Pare o servidor com `Ctrl+C` e rode:
 
 ```bash
-npx expo start --tunnel
+npx expo start --tunnel ngrok
 ```
 
-Na primeira vez, o Expo pergunta se pode instalar o pacote `@expo/ngrok`, necessário para o túnel. Responda `Y` (sim).
+Esse modo não exige conta. Na primeira vez, o Expo pergunta se pode instalar o pacote `@expo/ngrok`, necessário para o túnel: responda `Y` (sim). Sem o `ngrok`, o `--tunnel` usa o túnel do próprio Expo, que exige login (`npx expo login`) numa conta Expo gratuita.
+
+Outra opção, sem túnel: ligue o roteador (hotspot) do celular, conecte o computador a essa rede e use o `npx expo start` normal.
 
 ### Usuários de exemplo (Entrega 2)
 
@@ -81,7 +83,7 @@ A partir da Entrega 3, copie `.env.example` para `.env` e preencha os valores. O
 |---|---|---|
 | App | React Native + **Expo** (Expo Go), JavaScript | Exigência da disciplina |
 | Navegação | **Expo Router** | [ADR-005](docs/03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md) |
-| Banco local | **expo-sqlite** | [ADR-002](docs/03-ADRs/ADR%20002%20—%20Persistencia%20local%20remota.md) |
+| Banco local | Arquivo JSON no aparelho (**expo-file-system**) | [ADR-002](docs/03-ADRs/ADR%20002%20—%20Persistencia%20local%20remota.md) |
 | Banco remoto | **Firebase Firestore** (Entrega 3) | [ADR-002](docs/03-ADRs/ADR%20002%20—%20Persistencia%20local%20remota.md), [ADR-003](docs/03-ADRs/ADR%20003%20—%20Sincronização%20dos%20dados.md) |
 | Autenticação | **Firebase Authentication** (Entrega 3) | [ADR-005](docs/03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md), [ADR-008](docs/03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md) |
 | IA | **Google Gemini** via servidor no **Render** (Entrega 3) | [ADR-006](docs/03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md) |
@@ -97,7 +99,7 @@ O app é organizado em quatro camadas. Cada uma só conversa com a de baixo:
 
 ```
 Telas (app/)  →  Hooks (hooks/)  →  Serviços (services/)  →  Repositórios (data/)
- exibem          carregando /        regras de negócio        SQLite (Entrega 2)
+ exibem          carregando /        regras de negócio        arquivo local (Entrega 2)
  dados           erro / vazio        e transações             + Firestore (Entrega 3)
 ```
 
@@ -110,7 +112,7 @@ app/            telas e rotas (Expo Router)
 components/     componentes visuais reutilizáveis
 hooks/          acesso a dados para as telas
 services/       regras de negócio
-data/           SQLite: esquema, dados de exemplo e repositórios
+data/           banco local (arquivo JSON), dados de exemplo e repositórios
 context/        sessão do usuário
 constants/      cores, estilos e textos fixos
 utils/          funções de data, texto e validação

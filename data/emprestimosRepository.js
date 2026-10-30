@@ -1,48 +1,50 @@
-import { getDb } from './db';
+import { getDb, salvar } from './db';
 import { novoId } from './ids';
 import { agoraISO } from '../utils/datas';
 
 // Coleção `emprestimos` (ADR-001). `dataDevolucao` nula = empréstimo aberto.
+
+function copiar(emprestimo) {
+  return emprestimo ? { ...emprestimo } : null;
+}
+
+function compararCampo(a, b) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
 
 // Empréstimos abertos, atrasados primeiro.
 //   usuarioId: só os de um usuário ("Meus")
 //   somenteAtrasados: só os com data prevista anterior a `hoje`
 export async function listarAbertos({ hoje, usuarioId, somenteAtrasados, itemId } = {}) {
   const db = await getDb();
-  const condicoes = ['dataDevolucao IS NULL'];
-  const parametros = [];
-  if (usuarioId) {
-    condicoes.push('usuarioId = ?');
-    parametros.push(usuarioId);
-  }
-  if (itemId) {
-    condicoes.push('itemId = ?');
-    parametros.push(itemId);
-  }
-  if (somenteAtrasados) {
-    condicoes.push('dataPrevista < ?');
-    parametros.push(hoje);
-  }
-  return db.getAllAsync(
-    `SELECT * FROM emprestimos
-      WHERE ${condicoes.join(' AND ')}
-      ORDER BY (dataPrevista < ?) DESC, dataPrevista ASC, dataRetirada ASC`,
-    [...parametros, hoje]
-  );
+  const atrasado = (e) => e.dataPrevista < hoje;
+  return db.emprestimos
+    .filter(
+      (e) =>
+        !e.dataDevolucao &&
+        (!usuarioId || e.usuarioId === usuarioId) &&
+        (!itemId || e.itemId === itemId) &&
+        (!somenteAtrasados || atrasado(e))
+    )
+    .sort(
+      (a, b) =>
+        Number(atrasado(b)) - Number(atrasado(a)) ||
+        compararCampo(a.dataPrevista, b.dataPrevista) ||
+        compararCampo(a.dataRetirada, b.dataRetirada)
+    )
+    .map(copiar);
 }
 
 export async function buscarPorId(id) {
   const db = await getDb();
-  return db.getFirstAsync('SELECT * FROM emprestimos WHERE id = ?', [id]);
+  return copiar(db.emprestimos.find((e) => e.id === id));
 }
 
 export async function contarAbertosDoItem(itemId) {
   const db = await getDb();
-  const linha = await db.getFirstAsync(
-    'SELECT COUNT(*) AS total FROM emprestimos WHERE itemId = ? AND dataDevolucao IS NULL',
-    [itemId]
-  );
-  return linha ? linha.total : 0;
+  return db.emprestimos.filter((e) => e.itemId === itemId && !e.dataDevolucao).length;
 }
 
 export async function criar(dados) {
@@ -60,45 +62,29 @@ export async function criar(dados) {
     dataDevolucao: dados.dataDevolucao ?? null,
     updatedAt: agoraISO(),
   };
-  await db.runAsync(
-    `INSERT INTO emprestimos (id, itemId, itemNome, usuarioId, usuarioNome, quantidade, finalidade,
-                              dataRetirada, dataPrevista, dataDevolucao, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      emprestimo.id,
-      emprestimo.itemId,
-      emprestimo.itemNome,
-      emprestimo.usuarioId,
-      emprestimo.usuarioNome,
-      emprestimo.quantidade,
-      emprestimo.finalidade,
-      emprestimo.dataRetirada,
-      emprestimo.dataPrevista,
-      emprestimo.dataDevolucao,
-      emprestimo.updatedAt,
-    ]
-  );
-  return emprestimo;
+  db.emprestimos.push(emprestimo);
+  await salvar();
+  return copiar(emprestimo);
 }
 
-// Encerra o empréstimo. A condição no WHERE impede devolver duas vezes:
+// Encerra o empréstimo. Impede devolver duas vezes:
 // devolve false se o empréstimo já estava encerrado.
 export async function registrarDevolucao(id, dataDevolucao) {
   const db = await getDb();
-  const resultado = await db.runAsync(
-    'UPDATE emprestimos SET dataDevolucao = ?, updatedAt = ? WHERE id = ? AND dataDevolucao IS NULL',
-    [dataDevolucao, agoraISO(), id]
-  );
-  return resultado.changes === 1;
+  const emprestimo = db.emprestimos.find((e) => e.id === id && !e.dataDevolucao);
+  if (!emprestimo) return false;
+  emprestimo.dataDevolucao = dataDevolucao;
+  emprestimo.updatedAt = agoraISO();
+  await salvar();
+  return true;
 }
 
 // Totais do Painel (RF17, RF24).
 export async function resumo({ hoje }) {
   const db = await getDb();
-  return db.getFirstAsync(
-    `SELECT
-       (SELECT COUNT(*) FROM emprestimos WHERE dataDevolucao IS NULL) AS emprestimosAbertos,
-       (SELECT COUNT(*) FROM emprestimos WHERE dataDevolucao IS NULL AND dataPrevista < ?) AS atrasados`,
-    [hoje]
-  );
+  const abertos = db.emprestimos.filter((e) => !e.dataDevolucao);
+  return {
+    emprestimosAbertos: abertos.length,
+    atrasados: abertos.filter((e) => e.dataPrevista < hoje).length,
+  };
 }

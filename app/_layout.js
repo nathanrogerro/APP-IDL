@@ -10,7 +10,7 @@ import { Botao } from '../components/Botao';
 import { Toast } from '../components/Toast';
 import { cores, espaco, fonte } from '../constants/tema';
 
-// Layout raiz (ADR-005): prepara o banco local (SQLite) e fornece a sessão
+// Layout raiz (ADR-005): prepara o banco local e fornece a sessão
 // (AuthContext) para o app inteiro.
 export default function LayoutRaiz() {
   const banco = usePrepararBanco();

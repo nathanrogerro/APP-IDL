@@ -1,10 +1,10 @@
 # ADR 003 — Sincronização dos dados
 
-**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (corrigidas a detecção de exclusões e a origem do `updatedAt`)
+**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (corrigidas a detecção de exclusões e a origem do `updatedAt`) · 30/10 (o banco local passou a ser um arquivo JSON, [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md); a estratégia não muda)
 
 ## Resumo
 
-No contexto de um sistema que utiliza Firestore e SQLite, diante da necessidade de manter o cache local atualizado sem realizar leituras desnecessárias, decidimos por utilizar **sincronização incremental com `updatedAt` (gerado pelo servidor) e `lastSyncAt`, com exclusão lógica**, para alcançar menor consumo do Firebase e menor transferência de dados, aceitando uma maior complexidade na sincronização.
+No contexto de um sistema que utiliza o Firestore e uma cópia local dos dados, diante da necessidade de manter o cache local atualizado sem realizar leituras desnecessárias, decidimos por utilizar **sincronização incremental com `updatedAt` (gerado pelo servidor) e `lastSyncAt`, com exclusão lógica**, para alcançar menor consumo do Firebase e menor transferência de dados, aceitando uma maior complexidade na sincronização.
 
 ## Contexto
 
@@ -16,7 +16,7 @@ Por exemplo, em um inventário com **10.000 itens**, se somente **20** fossem al
 
 A versão original desta ADR tinha duas falhas:
 
-1. **Exclusões não eram detectadas.** Um documento apagado do Firestore não aparece na consulta `updatedAt > lastSyncAt`, porque ele não existe mais. O SQLite dos outros aparelhos manteria o item para sempre.
+1. **Exclusões não eram detectadas.** Um documento apagado do Firestore não aparece na consulta `updatedAt > lastSyncAt`, porque ele não existe mais. A cópia local dos outros aparelhos manteria o item para sempre.
 2. **O relógio do celular não é confiável.** Se o `updatedAt` fosse gerado pelo aparelho e o relógio de um celular estivesse 10 minutos atrasado, as alterações feitas nele poderiam ficar "antes" do `lastSyncAt` de outro aparelho e nunca ser baixadas.
 
 ## Alternativas consideradas
@@ -31,16 +31,16 @@ A versão original desta ADR tinha duas falhas:
 ## Solução
 
 1. Cada documento de `usuarios`, `locais`, `itens` e `emprestimos` possui o campo `updatedAt`, preenchido **sempre** com `serverTimestamp()` (horário do servidor do Firebase), nunca com o relógio do aparelho.
-2. **Nada é apagado fisicamente.** "Excluir" grava `arquivado: true` e um novo `updatedAt`. Na sincronização, o documento arquivado chega como qualquer outra alteração, e o SQLite o esconde das listas.
+2. **Nada é apagado fisicamente.** "Excluir" grava `arquivado: true` e um novo `updatedAt`. Na sincronização, o documento arquivado chega como qualquer outra alteração, e o app o esconde das listas.
 3. `movimentacoes` é somente inclusão (nunca alterada), então é sincronizada pelo campo `dataHora`.
-4. O aplicativo armazena um `lastSyncAt` **por coleção** no SQLite.
+4. O aplicativo armazena um `lastSyncAt` **por coleção** no banco local.
 5. Na sincronização, para cada coleção, são buscados apenas os documentos em que:
 
    ```
    updatedAt >= lastSyncAt
    ```
 
-   O `>=` (em vez de `>`) evita perder documentos gravados no mesmo instante do último `lastSyncAt`. Os documentos repetidos não causam problema, porque a gravação no SQLite é um *upsert* (insere ou substitui pelo ID).
+   O `>=` (em vez de `>`) evita perder documentos gravados no mesmo instante do último `lastSyncAt`. Os documentos repetidos não causam problema, porque a gravação na cópia local é um *upsert* (insere ou substitui pelo ID).
 
 6. **Quando sincronizar:** ao abrir o app, ao puxar a lista para baixo (*pull to refresh*) e logo após cada gravação feita pelo próprio usuário.
 7. A **primeira sincronização** de um aparelho (`lastSyncAt` vazio) baixa tudo uma única vez.
@@ -48,10 +48,10 @@ A versão original desta ADR tinha duas falhas:
 
 ## Consequências
 
-- **Ganho:** A estratégia reduz leituras e transferências de dados e mantém o SQLite atualizado de forma eficiente.
+- **Ganho:** A estratégia reduz leituras e transferências de dados e mantém a cópia local atualizada de forma eficiente.
 - **Ganho:** Exclusões chegam a todos os aparelhos.
 - **Ganho:** Diferenças de relógio entre aparelhos não fazem alterações se perderem.
-- **Custo:** Documentos arquivados continuam ocupando espaço no Firestore e no SQLite. Para o volume de um laboratório, isso é irrelevante.
+- **Custo:** Documentos arquivados continuam ocupando espaço no Firestore e no aparelho. Para o volume de um laboratório, isso é irrelevante.
 - **Custo:** Toda consulta de tela precisa filtrar `arquivado = 0`; essa regra fica nos repositórios ([ADR-004](ADR%20004%20—%20Arquitetura%20em%20camadas.md)) para não ser esquecida.
 - **Custo:** O sistema precisa controlar corretamente `updatedAt`, `lastSyncAt` e possíveis falhas de sincronização: se uma sincronização falhar no meio, o `lastSyncAt` daquela coleção não é atualizado e a próxima tentativa repete a busca.
 - **Observação:** Na fase local não há sincronização, porque o Firestore ainda não é usado ([ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md)). A exclusão lógica, porém, já é implementada desde agora.

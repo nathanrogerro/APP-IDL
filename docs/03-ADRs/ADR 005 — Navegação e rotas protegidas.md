@@ -1,6 +1,6 @@
 # ADR 005 — Navegação e rotas protegidas
 
-**Status:** Aceita · **Data:** 25/10
+**Status:** Aceita · **Data:** 25/10 · **Revisada:** 30/10 (nome do banco local, [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md))
 
 ## Resumo
 
@@ -26,7 +26,7 @@ No contexto de um app com telas públicas (login, cadastro) e privadas (inventá
 
 ```
 app/
-  _layout.js                 raiz: inicializa o SQLite e fornece o AuthContext
+  _layout.js                 raiz: abre o banco local e fornece o AuthContext
   (auth)/                    telas públicas
     login.js
     cadastro.js

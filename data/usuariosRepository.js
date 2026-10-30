@@ -1,64 +1,54 @@
-import { getDb } from './db';
+import { getDb, salvar } from './db';
 import { novoId } from './ids';
 import { agoraISO } from '../utils/datas';
+import { compararTexto } from '../utils/texto';
 
 // Coleção `usuarios` (ADR-001). Senhas NUNCA são gravadas aqui (RNF10).
 
-function mapear(linha) {
-  if (!linha) return null;
-  return {
-    ...linha,
-    ativo: !!linha.ativo,
-    notificacoesAtivas: !!linha.notificacoesAtivas,
-  };
+// Os repositórios devolvem cópias: alterar o objeto recebido não altera o banco.
+function copiar(usuario) {
+  return usuario ? { ...usuario } : null;
+}
+
+function mesmoEmail(a, b) {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
 export async function listar() {
   const db = await getDb();
-  const linhas = await db.getAllAsync('SELECT * FROM usuarios ORDER BY nome COLLATE NOCASE');
-  return linhas.map(mapear);
+  return db.usuarios.map(copiar).sort((a, b) => compararTexto(a.nome, b.nome));
 }
 
 export async function buscarPorId(id) {
   const db = await getDb();
-  return mapear(await db.getFirstAsync('SELECT * FROM usuarios WHERE id = ?', [id]));
+  return copiar(db.usuarios.find((u) => u.id === id));
 }
 
 export async function buscarPorEmail(email) {
   const db = await getDb();
-  return mapear(await db.getFirstAsync('SELECT * FROM usuarios WHERE email = ?', [email.trim()]));
+  return copiar(db.usuarios.find((u) => mesmoEmail(u.email, email)));
 }
 
 export async function criar(dados) {
   const db = await getDb();
+  if (db.usuarios.some((u) => mesmoEmail(u.email, dados.email))) {
+    throw new Error('Já existe um usuário com este e-mail.');
+  }
   const agora = agoraISO();
   const usuario = {
     id: dados.id || novoId(),
     nome: dados.nome,
     email: dados.email.trim().toLowerCase(),
     perfil: dados.perfil,
-    ativo: dados.ativo === false ? 0 : 1,
+    ativo: dados.ativo !== false,
     diasAlertaValidade: dados.diasAlertaValidade ?? 30,
-    notificacoesAtivas: dados.notificacoesAtivas ? 1 : 0,
+    notificacoesAtivas: !!dados.notificacoesAtivas,
     criadoEm: dados.criadoEm || agora,
     updatedAt: agora,
   };
-  await db.runAsync(
-    `INSERT INTO usuarios (id, nome, email, perfil, ativo, diasAlertaValidade, notificacoesAtivas, criadoEm, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      usuario.id,
-      usuario.nome,
-      usuario.email,
-      usuario.perfil,
-      usuario.ativo,
-      usuario.diasAlertaValidade,
-      usuario.notificacoesAtivas,
-      usuario.criadoEm,
-      usuario.updatedAt,
-    ]
-  );
-  return mapear(usuario);
+  db.usuarios.push(usuario);
+  await salvar();
+  return copiar(usuario);
 }
 
 const CAMPOS_EDITAVEIS = ['nome', 'perfil', 'ativo', 'diasAlertaValidade', 'notificacoesAtivas'];
@@ -66,10 +56,9 @@ const CAMPOS_EDITAVEIS = ['nome', 'perfil', 'ativo', 'diasAlertaValidade', 'noti
 export async function atualizar(id, campos) {
   const db = await getDb();
   const nomes = Object.keys(campos).filter((c) => CAMPOS_EDITAVEIS.includes(c));
-  if (!nomes.length) return;
-  const valores = nomes.map((c) => (typeof campos[c] === 'boolean' ? (campos[c] ? 1 : 0) : campos[c]));
-  await db.runAsync(
-    `UPDATE usuarios SET ${nomes.map((c) => `${c} = ?`).join(', ')}, updatedAt = ? WHERE id = ?`,
-    [...valores, agoraISO(), id]
-  );
+  const usuario = db.usuarios.find((u) => u.id === id);
+  if (!nomes.length || !usuario) return;
+  for (const c of nomes) usuario[c] = campos[c];
+  usuario.updatedAt = agoraISO();
+  await salvar();
 }

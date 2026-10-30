@@ -19,9 +19,13 @@ export function normalizarBusca(texto) {
     .trim();
 }
 
-// Escapa os curingas do LIKE (% e _) digitados pelo usuário. Usado com `ESCAPE '\'`.
-export function escaparLike(texto) {
-  return texto.replace(/[\\%_]/g, (c) => `\\${c}`);
+// Comparação para ordenar listas por nome, sem diferenciar maiúsculas nem acentos.
+export function compararTexto(a, b) {
+  const x = normalizarBusca(a);
+  const y = normalizarBusca(b);
+  if (x < y) return -1;
+  if (x > y) return 1;
+  return 0;
 }
 
 export function primeiroNome(nome) {

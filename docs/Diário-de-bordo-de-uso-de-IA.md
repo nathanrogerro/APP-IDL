@@ -3,7 +3,7 @@
 | Etapa | Registros |
 |---|---|
 | Entrega 1 — Tema, PRD, ADRs e protótipo | [01 a 05](#registro-01--definição-do-problema-e-público-alvo) |
-| Entrega 2 — Revisão dos documentos e implementação das telas | [06 a 15](#entrega-2) |
+| Entrega 2 — Revisão dos documentos e implementação das telas | [06 a 16](#entrega-2) |
 
 ---
 
@@ -556,3 +556,48 @@ Nada foi recusado.
 
 O conflito do `react-dom` e a versão do Node só aparecem numa instalação do zero, exatamente o que o professor fará ao clonar o repositório. Sem o teste, o app funcionaria no computador de quem o criou e falharia na correção.
 
+---
+
+## Registro 16 — Erro ao abrir o app no Expo Go do celular
+
+### O que foi pedido à IA
+
+Ao rodar o app pela primeira vez num celular Android com o Expo Go 58, ele fechou na abertura com o erro `Cannot find native module 'ExpoSQLite'`. A equipe enviou o erro à IA e solicitou que encontrasse a causa e fizesse o app abrir no Expo Go, sem trocar a versão do SDK.
+
+Antes disso, o comando `npx expo start --tunnel` também tinha falhado, pedindo login numa conta Expo.
+
+### O que veio da IA
+
+A IA verificou que o erro não vinha do computador da equipe: essa versão do Expo Go para Android não carrega o módulo nativo do `expo-sqlite`, e outro projeto público no GitHub registrou o mesmo erro com o Expo Go 58.0.5. Nos registros de alterações dos pacotes instalados, a IA viu que só dois pacotes do projeto passaram por uma mudança interna do Expo (a nova versão da API de módulos nativos): o `expo-sqlite` e o `expo-crypto`, usado para gerar os IDs.
+
+A IA apresentou três caminhos:
+
+1. voltar ao SDK 57, descartado porque o Expo Go da loja só abre projetos do SDK 58;
+2. manter o SQLite e criar um banco reserva para quando o módulo faltar, descartado porque seriam dois bancos para manter;
+3. trocar o banco local por um arquivo JSON gravado com o `expo-file-system`, que faz parte do próprio pacote `expo` e vem dentro do Expo Go.
+
+Com o caminho 3, a IA reescreveu só a pasta `data/`: a leitura e a gravação do arquivo (com uma versão para o navegador, usando o `localStorage`), as transações (cópia dos dados antes da operação e restauração em caso de falha) e os repositórios, com as mesmas funções de antes. Os IDs passaram a ser gerados no próprio código, no mesmo formato UUID.
+
+Para o túnel, a IA explicou que no SDK 58 o `--tunnel` usa o serviço do próprio Expo, que exige conta, e que `--tunnel ngrok` funciona sem conta.
+
+Depois da troca, a IA repetiu os testes:
+
+- 28 casos de regras de negócio, incluindo casos novos: o arquivo no disco acompanha os dados em memória, a transação desfeita não altera o arquivo, o histórico continua bloqueado para alteração e os IDs são únicos;
+- uma simulação de fechar e abrir o app, em que os dados criados e a sessão continuam salvos, e uma simulação de arquivo corrompido, em que o app recria os dados de exemplo em vez de fechar;
+- os dois roteiros no navegador (45 telas e estados), sem erros;
+- o empacotamento para Android e iOS, conferindo que o app não usa mais os módulos `ExpoSQLite` e `ExpoCrypto`;
+- a instalação a partir de um clone limpo.
+
+### O que foi aceito
+
+A troca do banco local e a revisão da ADR-002, que passou a registrar o SQLite como alternativa descartada, o motivo e os novos custos (todos os dados ficam em memória e cada alteração regrava o arquivo inteiro). As ADR-001, 003, 004, 005 e 007 tiveram só a nomenclatura ajustada, e o README passou a indicar `npx expo start --tunnel ngrok`.
+
+### O que foi recusado ou alterado
+
+Duas afirmações anteriores da IA estavam erradas e foram corrigidas: que o modo túnel não exigia conta e que o app estava pronto para o Expo Go. A IA tinha testado o app no navegador e em empacotamentos, que não usam o Expo Go, e por isso o erro só apareceu no celular.
+
+O motivo usado no Registro 07 para descartar o AsyncStorage (buscar e filtrar exigiria carregar tudo na memória) também foi revisto: o arquivo JSON também mantém os dados em memória, o que a equipe aceitou para o volume de um laboratório. Na ADR-002, o AsyncStorage continua descartado, agora porque guardaria o mesmo conteúdo e seria um pacote a mais.
+
+### Por quê
+
+O enunciado exige que o app rode no Expo Go, então nenhuma solução que dependesse do `expo-sqlite` funcionaria na correção. A troca também mostrou, na prática, o ganho da arquitetura em camadas da ADR-004: o banco mudou sem alterar a lógica das telas, dos hooks e dos serviços. A equipe passou a testar no celular antes de cada entrega, e não só no navegador.

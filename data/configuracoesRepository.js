@@ -1,22 +1,20 @@
-import { getDb } from './db';
+import { getDb, salvar } from './db';
 
 // Pares chave/valor guardados no aparelho.
 
 export async function obter(chave) {
   const db = await getDb();
-  const linha = await db.getFirstAsync('SELECT valor FROM configuracoes WHERE chave = ?', [chave]);
-  return linha ? linha.valor : null;
+  return db.configuracoes[chave] ?? null;
 }
 
 export async function definir(chave, valor) {
   const db = await getDb();
-  await db.runAsync(
-    'INSERT INTO configuracoes (chave, valor) VALUES (?, ?) ON CONFLICT (chave) DO UPDATE SET valor = excluded.valor',
-    [chave, valor]
-  );
+  db.configuracoes[chave] = valor;
+  await salvar();
 }
 
 export async function remover(chave) {
   const db = await getDb();
-  await db.runAsync('DELETE FROM configuracoes WHERE chave = ?', [chave]);
+  delete db.configuracoes[chave];
+  await salvar();
 }

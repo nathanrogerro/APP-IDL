@@ -1,10 +1,10 @@
 # ADR 001 — Modelagem dos dados
 
-**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (detalhamento das coleções, campos, identificadores e exclusão lógica)
+**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (detalhamento das coleções, campos, identificadores e exclusão lógica) · 30/10 (banco local passou a ser um arquivo JSON e os IDs deixaram de usar o `expo-crypto`, ver [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md))
 
 ## Resumo
 
-No contexto de um aplicativo de inventário para laboratórios, diante da necessidade de organizar usuários, locais, itens, empréstimos e movimentações em um banco NoSQL (Firestore) espelhado em um banco local (SQLite), decidimos por **cinco coleções na raiz, relacionadas por identificadores, com cópia proposital de nomes (desnormalização) e exclusão lógica**, para alcançar consultas baratas e um histórico legível, aceitando que nomes copiados podem ficar desatualizados e que o saldo do item precisa ser mantido em transação.
+No contexto de um aplicativo de inventário para laboratórios, diante da necessidade de organizar usuários, locais, itens, empréstimos e movimentações em um banco NoSQL (Firestore) espelhado em um banco local (arquivo JSON no aparelho), decidimos por **cinco coleções na raiz, relacionadas por identificadores, com cópia proposital de nomes (desnormalização) e exclusão lógica**, para alcançar consultas baratas e um histórico legível, aceitando que nomes copiados podem ficar desatualizados e que o saldo do item precisa ser mantido em transação.
 
 ## Contexto
 
@@ -13,7 +13,7 @@ O sistema precisa armazenar diferentes tipos de informações e relacionamentos.
 Restrições que influenciam a modelagem:
 
 - O **Firestore não faz JOIN**: cada documento de outra coleção lido para montar uma tela custa uma leitura da cota gratuita (≤ 50.000/dia, RNF18).
-- A mesma estrutura precisa existir no **SQLite** (cache local, [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md)) e ser sincronizada de forma incremental ([ADR-003](ADR%20003%20—%20Sincronização%20dos%20dados.md)).
+- A mesma estrutura precisa existir no **banco local** do aparelho (cache, [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md)) e ser sincronizada de forma incremental ([ADR-003](ADR%20003%20—%20Sincronização%20dos%20dados.md)).
 - O histórico é **imutável** (RNF20) e precisa continuar legível mesmo depois que um item for excluído.
 
 ## Alternativas consideradas
@@ -40,7 +40,7 @@ erDiagram
 
 ### Coleções e campos
 
-Os nomes são iguais no Firestore (coleção) e no SQLite (tabela).
+Os nomes são iguais no Firestore (coleção) e no arquivo local (lista).
 
 **`usuarios`** — o ID do documento é o `uid` do Firebase Authentication.
 
@@ -110,7 +110,7 @@ Os nomes são iguais no Firestore (coleção) e no SQLite (tabela).
 2. **Desnormalização**: `itemNome`, `usuarioNome` e `localDescricao` são copiados no momento da gravação. O histórico e as listas são exibidos sem leituras extras.
 3. **Exclusão lógica** (`arquivado = true`) em itens e locais: o item some das listas, mas o histórico continua apontando para ele. É também o que permite que a exclusão chegue aos outros aparelhos na sincronização ([ADR-003](ADR%20003%20—%20Sincronização%20dos%20dados.md)).
 4. **Saldo armazenado no item** (e não calculado somando movimentações): a lista mostra a quantidade sem ler o histórico. Toda operação que altera o saldo grava o item, o empréstimo e a movimentação **na mesma transação**.
-5. **IDs gerados no app** (UUID via `expo-crypto`): o mesmo ID é usado no SQLite e no Firestore, sem tabela de conversão. Exceção: `usuarios`, que usa o `uid` do Firebase Authentication.
+5. **IDs gerados no app** (UUID versão 4, gerado em `data/ids.js`): o mesmo ID é usado no banco local e no Firestore, sem tabela de conversão. Exceção: `usuarios`, que usa o `uid` do Firebase Authentication.
 6. **Validade como texto `AAAA-MM-DD`**: uma data sem horário não sofre deslocamento de fuso. Em JavaScript, `new Date('2026-11-03')` é interpretado como meia-noite em UTC, que em Brasília (UTC−3) é 21h do dia **02/11**; guardar como objeto de data faria a validade aparecer um dia antes.
 7. **Status do item não é armazenado**: "Vencido", "Vencendo", "Emprestado" e "Abaixo do mínimo" são calculados a partir de `validade`, `quantidade`, `estoqueMinimo` e dos empréstimos abertos. Assim, nunca ficam desatualizados.
 
@@ -144,7 +144,7 @@ Os nomes são iguais no Firestore (coleção) e no SQLite (tabela).
 
 - **Ganho:** Listas e histórico são exibidos com **uma consulta cada**, o que economiza cota do Firestore.
 - **Ganho:** O histórico continua legível mesmo após o item ser excluído ou renomeado.
-- **Ganho:** A mesma estrutura serve ao SQLite e ao Firestore, sem conversão de IDs.
+- **Ganho:** A mesma estrutura serve ao banco local e ao Firestore, sem conversão de IDs.
 - **Custo:** Se um item for **renomeado**, as movimentações antigas mantêm o nome antigo. Aceitamos isso porque o histórico deve registrar como o item se chamava naquele momento.
 - **Custo:** Se a descrição de um **local** mudar, `localDescricao` precisa ser atualizada nos itens daquele local (uma gravação em lote).
 - **Custo:** O saldo depende de **todas** as operações usarem transação; essa regra fica centralizada na camada de serviços ([ADR-004](ADR%20004%20—%20Arquitetura%20em%20camadas.md)).

@@ -1,37 +1,35 @@
-import { getDb } from './db';
+import { getDb, salvar } from './db';
 import { novoId } from './ids';
 import { agoraISO } from '../utils/datas';
+import { compararTexto } from '../utils/texto';
 
 // Coleção `locais` (ADR-001): sala → armário → prateleira. Exclusão lógica (`arquivado`).
 
-function mapear(linha) {
-  if (!linha) return null;
-  return { ...linha, arquivado: !!linha.arquivado };
+function copiar(local) {
+  return local ? { ...local } : null;
 }
 
 // Lista os locais ativos, com a quantidade de itens ativos em cada um.
 export async function listar() {
   const db = await getDb();
-  const linhas = await db.getAllAsync(
-    `SELECT l.*,
-            (SELECT COUNT(*) FROM itens i WHERE i.localId = l.id AND i.arquivado = 0) AS totalItens
-       FROM locais l
-      WHERE l.arquivado = 0
-      ORDER BY l.descricao COLLATE NOCASE`
-  );
-  return linhas.map(mapear);
+  return db.locais
+    .filter((l) => !l.arquivado)
+    .map((l) => ({
+      ...l,
+      totalItens: db.itens.filter((i) => i.localId === l.id && !i.arquivado).length,
+    }))
+    .sort((a, b) => compararTexto(a.descricao, b.descricao));
 }
 
 export async function buscarPorId(id) {
   const db = await getDb();
-  return mapear(await db.getFirstAsync('SELECT * FROM locais WHERE id = ?', [id]));
+  return copiar(db.locais.find((l) => l.id === id));
 }
 
 export async function buscarPorDescricao(descricao) {
   const db = await getDb();
-  return mapear(
-    await db.getFirstAsync('SELECT * FROM locais WHERE arquivado = 0 AND descricao = ? COLLATE NOCASE', [descricao])
-  );
+  const procurada = descricao.toLowerCase();
+  return copiar(db.locais.find((l) => !l.arquivado && l.descricao.toLowerCase() === procurada));
 }
 
 export async function criar(dados) {
@@ -42,24 +40,31 @@ export async function criar(dados) {
     armario: dados.armario ?? null,
     prateleira: dados.prateleira ?? null,
     descricao: dados.descricao,
+    arquivado: false,
     updatedAt: agoraISO(),
   };
-  await db.runAsync(
-    'INSERT INTO locais (id, sala, armario, prateleira, descricao, arquivado, updatedAt) VALUES (?, ?, ?, ?, ?, 0, ?)',
-    [local.id, local.sala, local.armario, local.prateleira, local.descricao, local.updatedAt]
-  );
-  return { ...local, arquivado: false };
+  db.locais.push(local);
+  await salvar();
+  return copiar(local);
 }
 
 export async function atualizar(id, dados) {
   const db = await getDb();
-  await db.runAsync(
-    'UPDATE locais SET sala = ?, armario = ?, prateleira = ?, descricao = ?, updatedAt = ? WHERE id = ?',
-    [dados.sala, dados.armario ?? null, dados.prateleira ?? null, dados.descricao, agoraISO(), id]
-  );
+  const local = db.locais.find((l) => l.id === id);
+  if (!local) return;
+  local.sala = dados.sala;
+  local.armario = dados.armario ?? null;
+  local.prateleira = dados.prateleira ?? null;
+  local.descricao = dados.descricao;
+  local.updatedAt = agoraISO();
+  await salvar();
 }
 
 export async function arquivar(id) {
   const db = await getDb();
-  await db.runAsync('UPDATE locais SET arquivado = 1, updatedAt = ? WHERE id = ?', [agoraISO(), id]);
+  const local = db.locais.find((l) => l.id === id);
+  if (!local) return;
+  local.arquivado = true;
+  local.updatedAt = agoraISO();
+  await salvar();
 }

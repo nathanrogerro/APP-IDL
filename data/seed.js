@@ -1,4 +1,4 @@
-import { getDb, emTransacao, recriarTabelas } from './db';
+import { getDb, emTransacao, apagarColecoes } from './db';
 import * as usuariosRepo from './usuariosRepository';
 import * as locaisRepo from './locaisRepository';
 import * as itensRepo from './itensRepository';
@@ -64,8 +64,7 @@ function momento(dias, hora = 9, minuto = 0) {
 
 export async function bancoEstaVazio() {
   const db = await getDb();
-  const linha = await db.getFirstAsync('SELECT COUNT(*) AS total FROM usuarios');
-  return !linha || linha.total === 0;
+  return db.usuarios.length === 0;
 }
 
 export async function popularDadosDeExemplo() {
@@ -219,6 +218,6 @@ async function registrarEmprestimo({ item, usuario, quantidade, finalidade, reti
 }
 
 export async function restaurarDadosDeExemplo() {
-  await recriarTabelas();
+  await apagarColecoes();
   await popularDadosDeExemplo();
 }

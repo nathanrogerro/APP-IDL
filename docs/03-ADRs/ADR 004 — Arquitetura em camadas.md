@@ -1,10 +1,10 @@
 # ADR 004 — Arquitetura em camadas
 
-**Status:** Aceita · **Data:** 24/10
+**Status:** Aceita · **Data:** 24/10 · **Revisada:** 30/10 (banco local trocado do SQLite por um arquivo JSON, [ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md); a troca ficou restrita à pasta `data/`, como esta ADR previa)
 
 ## Resumo
 
-No contexto de um app que começa usando apenas SQLite e na Entrega 3 passa a usar Firestore, Firebase Authentication, uma LLM e uma API externa, diante da necessidade de trocar a fonte dos dados sem reescrever as telas e de manter as regras de negócio em um único lugar, decidimos por uma **arquitetura em quatro camadas — telas, hooks, serviços e repositórios — com estado global apenas para a sessão (React Context)**, para alcançar telas simples, regras testáveis e uma troca de banco localizada, aceitando mais arquivos e um pouco mais de código do que acessar o banco direto das telas.
+No contexto de um app que começa usando apenas um banco local e na Entrega 3 passa a usar Firestore, Firebase Authentication, uma LLM e uma API externa, diante da necessidade de trocar a fonte dos dados sem reescrever as telas e de manter as regras de negócio em um único lugar, decidimos por uma **arquitetura em quatro camadas — telas, hooks, serviços e repositórios — com estado global apenas para a sessão (React Context)**, para alcançar telas simples, regras testáveis e uma troca de banco localizada, aceitando mais arquivos e um pouco mais de código do que acessar o banco direto das telas.
 
 ## Contexto
 
@@ -41,7 +41,7 @@ No contexto de um app que começa usando apenas SQLite e na Entrega 3 passa a us
 └──────────────┬───────────────────────────────────────────────────┘
                │ chamam
 ┌──────────────▼────── REPOSITÓRIOS (data/) ───────────────────────┐
-│ Leem e gravam. Fase local: SQLite. Entrega 3: SQLite + Firestore.│
+│ Leem e gravam. Fase local: arquivo JSON. Entrega 3: + Firestore. │
 └──────────────────────────────────────────────────────────────────┘
 
   AuthContext (context/): quem está logado, disponível para todo o app
@@ -64,7 +64,7 @@ components/              componentes visuais reutilizáveis (EstadoLista, Cartao
 hooks/                   useItens, useItem, useEmprestimos, useLocais, usePainel...
 services/                itensService, emprestimosService, locaisService, usuariosService,
                          iaService (E3), pubchemService (E3)
-data/                    db.js (abertura e esquema do SQLite), seed.js,
+data/                    db.js (arquivo local e transações), armazenamento.js, seed.js,
                          *Repository.js (um por coleção da ADR-001)
 context/                 AuthContext.js
 constants/               cores, espaçamentos, textos fixos
@@ -75,7 +75,7 @@ utils/                   funções puras de data, texto e validação (usadas po
 
 O erro nasce na camada que tem a informação e sobe até a camada que sabe exibi-lo:
 
-1. O **repositório** lança o erro técnico (falha no SQLite, sem conexão).
+1. O **repositório** lança o erro técnico (falha ao ler ou gravar o arquivo local, sem conexão).
 2. O **serviço** lança erros de regra com mensagem pronta para o usuário (`"Saldo insuficiente. Disponível: 3."`).
 3. O **hook** captura e expõe em `erro`.
 4. A **tela** exibe: em listagens, pelo componente `EstadoLista` (com "Tentar novamente"); em formulários, junto ao campo.
@@ -91,12 +91,12 @@ Um único componente recebe `carregando`, `erro`, `vazio` e `onTentarNovamente` 
 | Telas | Implementadas, com espaços reservados para IA, PubChem, notificação e exportação | Só preenchem esses espaços; navegação e layout não mudam |
 | Hooks | Implementados | Sem mudanças |
 | Serviços | Regras de saldo, datas, histórico e exclusão | + checagem de perfil, chamada à IA e à PubChem |
-| Repositórios | SQLite | SQLite (cache) + Firestore + sincronização |
+| Repositórios | Arquivo JSON local | Arquivo local (cache) + Firestore + sincronização |
 | AuthContext | Usuário de exemplo escolhido pelo e-mail no login (sem senha) | Firebase Authentication com sessão persistente |
 
 ## Consequências
 
-- **Ganho:** A troca do banco na Entrega 3 fica restrita a `data/` e `context/`.
+- **Ganho:** A troca do banco na Entrega 3 fica restrita a `data/` e `context/`. Isso já se confirmou em 30/10, quando o SQLite foi trocado pelo arquivo JSON ([ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md)) sem alterar a lógica de telas, hooks ou serviços.
 - **Ganho:** As regras de negócio ficam em `services/`, que pode ser testado com Jest sem abrir o app (RNF27).
 - **Ganho:** Estados de carregamento, vazio e erro ficam padronizados em todas as listagens.
 - **Ganho:** A organização é simples de explicar: "a tela pede ao hook, o hook ao serviço, o serviço ao repositório".
