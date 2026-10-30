@@ -104,7 +104,7 @@ A equipe decidiu registrar:
 
 Ainda está sendo decidido o **ADR 004 — Arquitetura do sistema**.
 
-> **Atualização posterior:** decidido e registrado na [ADR-004 — Arquitetura em camadas](03-ADRs/ADR-004-Arquitetura-em-camadas.md).
+> **Atualização posterior:** decidido e registrado na [ADR-004 — Arquitetura em camadas](03-ADRs/ADR%20004%20—%20Arquitetura%20em%20camadas.md).
 
 ### O que foi recusado ou alterado
 

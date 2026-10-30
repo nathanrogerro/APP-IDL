@@ -61,7 +61,7 @@ A partir da Entrega 3, copie `.env.example` para `.env` e preencha os valores. O
 |---|---|---|
 | `EXPO_PUBLIC_FIREBASE_*` | App (`.env`) | Configuração do projeto Firebase. Não é segredo: o acesso aos dados é controlado pelas Security Rules |
 | `EXPO_PUBLIC_IA_URL` | App (`.env`) | Endereço do servidor de IA no Render |
-| `GEMINI_API_KEY` | **Somente** no painel do Render | Chave do Gemini. Nunca fica no app nem no repositório ([ADR-006](docs/03-ADRs/ADR-006-Integracao-com-a-IA.md)) |
+| `GEMINI_API_KEY` | **Somente** no painel do Render | Chave do Gemini. Nunca fica no app nem no repositório ([ADR-006](docs/03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)) |
 | `GEMINI_MODEL`, `FIREBASE_PROJECT_ID` | Painel do Render | Configuração do servidor de IA |
 
 ---
@@ -71,14 +71,14 @@ A partir da Entrega 3, copie `.env.example` para `.env` e preencha os valores. O
 | Área | Tecnologia | Decisão |
 |---|---|---|
 | App | React Native + **Expo** (Expo Go), JavaScript | Exigência da disciplina |
-| Navegação | **Expo Router** | [ADR-005](docs/03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md) |
-| Banco local | **expo-sqlite** | [ADR-002](docs/03-ADRs/ADR-002-Persistencia-local-remota.md) |
-| Banco remoto | **Firebase Firestore** (Entrega 3) | [ADR-002](docs/03-ADRs/ADR-002-Persistencia-local-remota.md), [ADR-003](docs/03-ADRs/ADR-003-Sincronização-dos-dados.md) |
-| Autenticação | **Firebase Authentication** (Entrega 3) | [ADR-005](docs/03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md), [ADR-008](docs/03-ADRs/ADR-008-Atribuicao-de-perfis.md) |
-| IA | **Google Gemini** via servidor no **Render** (Entrega 3) | [ADR-006](docs/03-ADRs/ADR-006-Integracao-com-a-IA.md) |
-| API externa | **PubChem** (Entrega 3) | [ADR-007](docs/03-ADRs/ADR-007-API-externa-PubChem.md) |
+| Navegação | **Expo Router** | [ADR-005](docs/03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md) |
+| Banco local | **expo-sqlite** | [ADR-002](docs/03-ADRs/ADR%20002%20—%20Persistencia%20local%20remota.md) |
+| Banco remoto | **Firebase Firestore** (Entrega 3) | [ADR-002](docs/03-ADRs/ADR%20002%20—%20Persistencia%20local%20remota.md), [ADR-003](docs/03-ADRs/ADR%20003%20—%20Sincronização%20dos%20dados.md) |
+| Autenticação | **Firebase Authentication** (Entrega 3) | [ADR-005](docs/03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md), [ADR-008](docs/03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md) |
+| IA | **Google Gemini** via servidor no **Render** (Entrega 3) | [ADR-006](docs/03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md) |
+| API externa | **PubChem** (Entrega 3) | [ADR-007](docs/03-ADRs/ADR%20007%20—%20API%20externa.md) |
 | Recursos nativos | Câmera (`expo-camera`) e notificações locais (`expo-notifications`) | [PRD — RF08, RF20](docs/01-PRD.md) |
-| Estado | React Context (apenas sessão) + hooks | [ADR-004](docs/03-ADRs/ADR-004-Arquitetura-em-camadas.md) |
+| Estado | React Context (apenas sessão) + hooks | [ADR-004](docs/03-ADRs/ADR%20004%20—%20Arquitetura%20em%20camadas.md) |
 
 ---
 
@@ -92,7 +92,7 @@ Telas (app/)  →  Hooks (hooks/)  →  Serviços (services/)  →  Repositório
  dados           erro / vazio        e transações             + Firestore (Entrega 3)
 ```
 
-Com isso, a troca do banco local para o Firestore na Entrega 3 fica restrita à pasta `data/`, sem reescrever as telas. Detalhes, alternativas consideradas e consequências na [ADR-004](docs/03-ADRs/ADR-004-Arquitetura-em-camadas.md).
+Com isso, a troca do banco local para o Firestore na Entrega 3 fica restrita à pasta `data/`, sem reescrever as telas. Detalhes, alternativas consideradas e consequências na [ADR-004](docs/03-ADRs/ADR%20004%20—%20Arquitetura%20em%20camadas.md).
 
 ### Estrutura do repositório
 
@@ -115,12 +115,12 @@ docs/           PRD, ADRs, protótipo e diário de IA
 - [PRD — Documento de Requisitos do Produto](docs/01-PRD.md)
 - [Protótipo das telas (Entrega 1)](docs/02-labsto_mobile_app_prototype.html)
 - Decisões de arquitetura (ADRs):
-  - [ADR-001 — Modelagem dos dados](docs/03-ADRs/ADR-001-Modelagem-de-dados.md)
-  - [ADR-002 — Persistência local e remota](docs/03-ADRs/ADR-002-Persistencia-local-remota.md)
-  - [ADR-003 — Sincronização dos dados](docs/03-ADRs/ADR-003-Sincronização-dos-dados.md)
-  - [ADR-004 — Arquitetura em camadas](docs/03-ADRs/ADR-004-Arquitetura-em-camadas.md)
-  - [ADR-005 — Navegação e rotas protegidas](docs/03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md)
-  - [ADR-006 — Integração com a IA](docs/03-ADRs/ADR-006-Integracao-com-a-IA.md)
-  - [ADR-007 — API externa: PubChem](docs/03-ADRs/ADR-007-API-externa-PubChem.md)
-  - [ADR-008 — Atribuição de perfis](docs/03-ADRs/ADR-008-Atribuicao-de-perfis.md)
+  - [ADR-001 — Modelagem dos dados](docs/03-ADRs/ADR%20001%20—%20Modelagem%20de%20dados.md)
+  - [ADR-002 — Persistência local e remota](docs/03-ADRs/ADR%20002%20—%20Persistencia%20local%20remota.md)
+  - [ADR-003 — Sincronização dos dados](docs/03-ADRs/ADR%20003%20—%20Sincronização%20dos%20dados.md)
+  - [ADR-004 — Arquitetura em camadas](docs/03-ADRs/ADR%20004%20—%20Arquitetura%20em%20camadas.md)
+  - [ADR-005 — Navegação e rotas protegidas](docs/03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md)
+  - [ADR-006 — Integração com a IA](docs/03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)
+  - [ADR-007 — API externa: PubChem](docs/03-ADRs/ADR%20007%20—%20API%20externa.md)
+  - [ADR-008 — Atribuição de perfis](docs/03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md)
 - [Diário de bordo de uso de IA](docs/Diário-de-bordo-de-uso-de-IA.md)

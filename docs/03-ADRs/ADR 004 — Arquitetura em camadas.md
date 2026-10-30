@@ -100,4 +100,4 @@ Um único componente recebe `carregando`, `erro`, `vazio` e `onTentarNovamente` 
 - **Ganho:** Estados de carregamento, vazio e erro ficam padronizados em todas as listagens.
 - **Ganho:** A organização é simples de explicar: "a tela pede ao hook, o hook ao serviço, o serviço ao repositório".
 - **Custo:** Uma funcionalidade simples passa por quatro arquivos. Aceitamos esse custo pela previsibilidade.
-- **Custo:** Sem estado global de dados, duas telas abertas podem mostrar valores diferentes por um instante; isso é resolvido recarregando ao voltar o foco (`useFocusEffect`, [ADR-005](ADR-005-Navegacao-e-rotas-protegidas.md)).
+- **Custo:** Sem estado global de dados, duas telas abertas podem mostrar valores diferentes por um instante; isso é resolvido recarregando ao voltar o foco (`useFocusEffect`, [ADR-005](ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md)).

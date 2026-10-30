@@ -52,6 +52,6 @@ A versão original desta ADR tinha duas falhas:
 - **Ganho:** Exclusões chegam a todos os aparelhos.
 - **Ganho:** Diferenças de relógio entre aparelhos não fazem alterações se perderem.
 - **Custo:** Documentos arquivados continuam ocupando espaço no Firestore e no SQLite. Para o volume de um laboratório, isso é irrelevante.
-- **Custo:** Toda consulta de tela precisa filtrar `arquivado = 0`; essa regra fica nos repositórios ([ADR-004](ADR-004-Arquitetura-em-camadas.md)) para não ser esquecida.
+- **Custo:** Toda consulta de tela precisa filtrar `arquivado = 0`; essa regra fica nos repositórios ([ADR-004](ADR%20004%20—%20Arquitetura%20em%20camadas.md)) para não ser esquecida.
 - **Custo:** O sistema precisa controlar corretamente `updatedAt`, `lastSyncAt` e possíveis falhas de sincronização: se uma sincronização falhar no meio, o `lastSyncAt` daquela coleção não é atualizado e a próxima tentativa repete a busca.
-- **Observação:** Na fase local não há sincronização, porque o Firestore ainda não é usado ([ADR-002](ADR-002-Persistencia-local-remota.md)). A exclusão lógica, porém, já é implementada desde agora.
+- **Observação:** Na fase local não há sincronização, porque o Firestore ainda não é usado ([ADR-002](ADR%20002%20—%20Persistencia%20local%20remota.md)). A exclusão lógica, porém, já é implementada desde agora.

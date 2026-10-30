@@ -81,7 +81,7 @@ Para reagentes, o app consulta a base pública **PubChem** e mostra fórmula, ma
 | ID | Requisito | Prioridade |
 |---|---|---|
 | RF01 | O sistema deve permitir **login** com e-mail e senha. | Alta |
-| RF02 | O sistema deve permitir **cadastro de usuário** com nome, e-mail e senha. Toda conta nova recebe o perfil **Estudante** ([ADR-008](03-ADRs/ADR-008-Atribuicao-de-perfis.md)). | Alta |
+| RF02 | O sistema deve permitir **cadastro de usuário** com nome, e-mail e senha. Toda conta nova recebe o perfil **Estudante** ([ADR-008](03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md)). | Alta |
 | RF03 | O sistema deve permitir **recuperação de senha** por link enviado ao e-mail. | Média |
 | RF04 | O sistema deve ter **três perfis**: Administrador (professor), Técnico e Estudante, com permissões distintas (ver [matriz](#matriz-de-permissões)). | Alta |
 | RF05 | O Administrador deve poder **alterar o perfil** e **desativar** usuários, em uma lista de usuários. | Alta |
@@ -92,7 +92,7 @@ Para reagentes, o app consulta a base pública **PubChem** e mostra fórmula, ma
 | ID | Requisito | Prioridade |
 |---|---|---|
 | RF07 | O sistema deve permitir **cadastrar item** com: tipo (reagente, vidraria, equipamento), nome, quantidade, unidade, local (RF12), fabricante, concentração, lote, número CAS, validade, estoque mínimo e observações. Obrigatórios: tipo, nome, quantidade, unidade e local; validade é obrigatória para reagentes. | Alta |
-| RF08 | O sistema deve permitir **tirar foto do rótulo** e enviar à LLM para extrair nome, concentração, fabricante, lote, número CAS e validade. A foto é usada só na extração e **não é armazenada**. A chamada passa por um servidor intermediário que guarda a chave da LLM ([ADR-006](03-ADRs/ADR-006-Integracao-com-a-IA.md)). | Alta |
+| RF08 | O sistema deve permitir **tirar foto do rótulo** e enviar à LLM para extrair nome, concentração, fabricante, lote, número CAS e validade. A foto é usada só na extração e **não é armazenada**. A chamada passa por um servidor intermediário que guarda a chave da LLM ([ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)). | Alta |
 | RF09 | Campos preenchidos pela IA devem aparecer **destacados como sugestão** e só são salvos após confirmação do usuário. | Alta |
 | RF10 | ~~Ler código de barras~~ — **removido na revisão do PRD** (ver [histórico](#11-histórico-de-revisões)). | — |
 | RF11 | O sistema deve permitir **editar** e **excluir** itens. A exclusão é **lógica** (o item é arquivado e some das listas, mas o histórico é preservado). | Alta |
@@ -125,7 +125,7 @@ Para reagentes, o app consulta a base pública **PubChem** e mostra fórmula, ma
 | RF23 | O sistema deve exibir o **histórico de movimentação** de cada item (cadastro, edição, retirada, devolução, consumo, exclusão), com usuário e data/hora. | Alta |
 | RF24 | O sistema deve exibir um **painel** com totais: itens, vencendo, vencidos, emprestados, atrasados e abaixo do mínimo, além das movimentações recentes. | Média |
 | RF25 | O sistema deve **exportar** o inventário em CSV e abrir a opção de compartilhar o arquivo. | Baixa |
-| RF26 | Para reagentes, o sistema deve **consultar a PubChem** (pelo número CAS ou, sem CAS, pelo nome) e exibir fórmula molecular, massa molar e classificação de perigo GHS, com indicação de carregamento e mensagem de erro ([ADR-007](03-ADRs/ADR-007-API-externa-PubChem.md)). | Alta |
+| RF26 | Para reagentes, o sistema deve **consultar a PubChem** (pelo número CAS ou, sem CAS, pelo nome) e exibir fórmula molecular, massa molar e classificação de perigo GHS, com indicação de carregamento e mensagem de erro ([ADR-007](03-ADRs/ADR%20007%20—%20API%20externa.md)). | Alta |
 
 ### Matriz de permissões
 
@@ -168,11 +168,11 @@ Todos os requisitos abaixo são **verificáveis** com os recursos do grupo (celu
 |---|---|
 | RNF09 | Senhas com mínimo de **8 caracteres**, incluindo **1 número** e **1 letra**, validadas no formulário antes do envio. |
 | RNF10 | **0 senhas** gravadas no Firestore ou no aparelho: autenticação e hash ficam 100% no Firebase Authentication. |
-| RNF11 | A **sessão persiste** entre aberturas do app até o usuário fazer logout. Telas privadas são inacessíveis sem sessão ([ADR-005](03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md)). |
+| RNF11 | A **sessão persiste** entre aberturas do app até o usuário fazer logout. Telas privadas são inacessíveis sem sessão ([ADR-005](03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md)). |
 | RNF12 | **100%** do tráfego via **HTTPS** (Firebase, servidor da IA e PubChem). |
 | RNF13 | **100%** das coleções do Firestore protegidas por Security Rules que aplicam a matriz de permissões; **0 regras** `allow read, write: if true`. |
 | RNF14 | Link de recuperação de senha expira em **1 h**. |
-| RNF15 | **0 chaves de API** versionadas no repositório e **0 chaves secretas embutidas no app**: a chave da LLM existe apenas nas variáveis de ambiente do servidor intermediário ([ADR-006](03-ADRs/ADR-006-Integracao-com-a-IA.md)). A configuração do Firebase (incluindo seu `apiKey`) vai no app por exigência do próprio Firebase e não é secreta: ela só identifica o projeto, e o acesso aos dados é controlado pelas Security Rules (RNF13). |
+| RNF15 | **0 chaves de API** versionadas no repositório e **0 chaves secretas embutidas no app**: a chave da LLM existe apenas nas variáveis de ambiente do servidor intermediário ([ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)). A configuração do Firebase (incluindo seu `apiKey`) vai no app por exigência do próprio Firebase e não é secreta: ela só identifica o projeto, e o acesso aos dados é controlado pelas Security Rules (RNF13). |
 | RNF31 | O servidor da IA só atende requisições com **token válido do Firebase Authentication**, com limite de **30 extrações por usuário por dia**. |
 
 ### Disponibilidade e dados
@@ -203,7 +203,7 @@ Todos os requisitos abaixo são **verificáveis** com os recursos do grupo (celu
 
 | ID | Requisito |
 |---|---|
-| RNF27 | As regras de negócio ficam isoladas na camada de serviços ([ADR-004](03-ADRs/ADR-004-Arquitetura-em-camadas.md)) e têm **testes automatizados** (Jest) cobrindo, no mínimo, os critérios de aceite das US05, US06 e US07. |
+| RNF27 | As regras de negócio ficam isoladas na camada de serviços ([ADR-004](03-ADRs/ADR%20004%20—%20Arquitetura%20em%20camadas.md)) e têm **testes automatizados** (Jest) cobrindo, no mínimo, os critérios de aceite das US05, US06 e US07. |
 | RNF28 | Nova versão testável em **≤ 15 min** via Expo Go. |
 
 ---
@@ -338,7 +338,7 @@ Todos os requisitos abaixo são **verificáveis** com os recursos do grupo (celu
 
 ## 9. Telas e navegação
 
-As telas abaixo substituem o fluxo do protótipo da Entrega 1. Foram **acrescentadas** as telas de Inventário (lista), Detalhe do item, Locais, Perfil e Usuários, que não estavam no protótipo e são necessárias para cumprir os requisitos e a navegação com parâmetros. A navegação usa Expo Router ([ADR-005](03-ADRs/ADR-005-Navegacao-e-rotas-protegidas.md)).
+As telas abaixo substituem o fluxo do protótipo da Entrega 1. Foram **acrescentadas** as telas de Inventário (lista), Detalhe do item, Locais, Perfil e Usuários, que não estavam no protótipo e são necessárias para cumprir os requisitos e a navegação com parâmetros. A navegação usa Expo Router ([ADR-005](03-ADRs/ADR%20005%20—%20Navegação%20e%20rotas%20protegidas.md)).
 
 ### Mapa de telas
 
@@ -418,12 +418,12 @@ Revisão feita ao implementar as telas e ao conferir o PRD contra o enunciado da
 | Item | Mudança | Motivo |
 |---|---|---|
 | Nome | Padronizado como **LabSto — Inventário do Laboratório** | O PRD e o protótipo usavam nomes diferentes |
-| RF02 | Cadastro não escolhe mais o perfil; toda conta nova é Estudante | Escolher o perfil no cadastro permitia que qualquer pessoa se tornasse Administrador ([ADR-008](03-ADRs/ADR-008-Atribuicao-de-perfis.md)) |
+| RF02 | Cadastro não escolhe mais o perfil; toda conta nova é Estudante | Escolher o perfil no cadastro permitia que qualquer pessoa se tornasse Administrador ([ADR-008](03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md)) |
 | RF05 | De "aprovar, editar e desativar" para "alterar perfil e desativar"; prioridade Média → Alta | Sem aprovação, a promoção a Técnico pelo Admin passa a ser obrigatória |
 | RF07, RF08 | Acrescentados **número CAS**, concentração e estoque mínimo; local passa a referenciar o cadastro de locais | O CAS permite a consulta à PubChem; o estoque mínimo é usado pelo RF21 |
-| RF08 | A chamada à LLM passa por um servidor intermediário | Manter a chave fora do app ([ADR-006](03-ADRs/ADR-006-Integracao-com-a-IA.md)) |
+| RF08 | A chamada à LLM passa por um servidor intermediário | Manter a chave fora do app ([ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)) |
 | RF10, RNF03 | **Removidos** (código de barras) | Corte de escopo para priorizar os requisitos obrigatórios da disciplina |
-| RF11 | "Arquivar" passa a ser apresentado como **excluir (exclusão lógica)** | O enunciado exige exclusão disponível na interface; a exclusão lógica também é necessária para a sincronização ([ADR-003](03-ADRs/ADR-003-Sincronização-dos-dados.md)) |
+| RF11 | "Arquivar" passa a ser apresentado como **excluir (exclusão lógica)** | O enunciado exige exclusão disponível na interface; a exclusão lógica também é necessária para a sincronização ([ADR-003](03-ADRs/ADR%20003%20—%20Sincronização%20dos%20dados.md)) |
 | RF12 | Acrescentados editar e excluir locais | CRUD completo na interface |
 | RF16 | Consumo registrado na mesma tela da retirada | Menos telas e menos toques (RNF25) |
 | RF20 | "Notificação push" → **notificação local** | Push remoto não funciona no Expo Go |
@@ -434,9 +434,9 @@ Revisão feita ao implementar as telas e ao conferir o PRD contra o enunciado da
 | RNF06 | 85% em 100 rótulos → 80% em 20 rótulos | Conjunto de teste viável no semestre |
 | RNF09 | Validação da senha feita no formulário | Dá retorno imediato ao usuário e não depende de configuração extra no Firebase |
 | RNF11 | "Sessão encerrada após 30 min" → **sessão persiste até logout** | Conflitava com a exigência de sessão persistente do enunciado |
-| RNF15 | Chave secreta também não pode estar embutida no app; esclarecido que a configuração do Firebase não é secreta | Consequência da [ADR-006](03-ADRs/ADR-006-Integracao-com-a-IA.md) |
-| RNF26 | "Usuário novo" → "técnico usando o app pela primeira vez" | Conta nova é Estudante e não pode cadastrar itens ([ADR-008](03-ADRs/ADR-008-Atribuicao-de-perfis.md)) |
-| RNF31 | **Novo**: servidor da IA exige token do Firebase e limita uso por usuário | Sem isso, qualquer pessoa poderia chamar o servidor e gastar a cota ([ADR-006](03-ADRs/ADR-006-Integracao-com-a-IA.md)) |
+| RNF15 | Chave secreta também não pode estar embutida no app; esclarecido que a configuração do Firebase não é secreta | Consequência da [ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md) |
+| RNF26 | "Usuário novo" → "técnico usando o app pela primeira vez" | Conta nova é Estudante e não pode cadastrar itens ([ADR-008](03-ADRs/ADR%20008%20—%20Atribuição%20de%20perfis%20de%20usuário.md)) |
+| RNF31 | **Novo**: servidor da IA exige token do Firebase e limita uso por usuário | Sem isso, qualquer pessoa poderia chamar o servidor e gastar a cota ([ADR-006](03-ADRs/ADR%20006%20—%20Integração%20com%20a%20IA.md)) |
 | RNF16 → RNF32 | 99% de disponibilidade → falha da IA ou da PubChem não bloqueia fluxos | A disponibilidade depende de serviços de terceiros; a nova meta é testável |
 | RNF17 | Backup semanal em JSON → **removido**; backup via exportação CSV (RF25) | Backup agendado exige plano pago |
 | RNF20 | Retenção de 5 anos → histórico imutável | Retenção de 5 anos não é verificável; imutabilidade é |

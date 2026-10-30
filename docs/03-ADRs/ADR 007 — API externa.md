@@ -16,7 +16,7 @@ No contexto de um inventário de laboratório que precisa consumir ao menos uma 
 | # | Alternativa | Por que não |
 |---|---|---|
 | A | **BrasilAPI (feriados)**, para avisar quando a devolução cai em feriado | Gratuita e simples, mas pouco útil no fluxo principal |
-| B | **ChemSpider** (Royal Society of Chemistry) | Exige cadastro e chave de API, voltando ao problema da [ADR-006](ADR-006-Integracao-com-a-IA.md) |
+| B | **ChemSpider** (Royal Society of Chemistry) | Exige cadastro e chave de API, voltando ao problema da [ADR-006](ADR%20006%20—%20Integração%20com%20a%20IA.md) |
 | C | Usar o próprio **Gemini** para descrever o reagente | A LLM pode inventar dados de segurança; para perigo químico, a fonte precisa ser uma base oficial |
 | **D** | **PubChem PUG REST** | **Escolhida** — gratuita, sem chave, mantida pelo NIH, com dados de perigo GHS |
 
@@ -35,7 +35,7 @@ No contexto de um inventário de laboratório que precisa consumir ao menos uma 
 2. Busca **pelo número CAS** quando informado; sem CAS, tenta pelo nome. A PubChem indexa nomes em inglês, então "Acetona" pode não ser encontrada, mas o CAS `67-64-1` é, porque é um identificador único e internacional do composto. Por isso o CAS foi acrescentado ao cadastro (RF07) e à extração por IA (RF08).
 3. A resposta é guardada em uma tabela de **cache local** no SQLite (`cache_pubchem`, chave = CAS ou nome), válida por 30 dias. Ela não é sincronizada com o Firestore.
 4. Os códigos de pictograma (GHS02, GHS05...) são traduzidos para português por uma tabela fixa no app ("Inflamável", "Corrosivo"...).
-5. A chamada fica em `services/pubchemService.js` ([ADR-004](ADR-004-Arquitetura-em-camadas.md)).
+5. A chamada fica em `services/pubchemService.js` ([ADR-004](ADR%20004%20—%20Arquitetura%20em%20camadas.md)).
 
 ### Estados na tela de detalhe
 

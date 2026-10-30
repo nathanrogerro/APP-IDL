@@ -33,16 +33,16 @@ com `WHERE nomeBusca LIKE '%etan%'`.
 - O SQLite será implementado através do [`expo-sqlite`](https://docs.expo.dev/versions/latest/sdk/sqlite/), compatível com o Expo Go.
 - As **leituras** (listas, busca, detalhe, painel) são feitas no SQLite.
 - As **escritas** são enviadas ao Firestore e, após a confirmação, aplicadas no SQLite. Elas exigem conexão, pois o modo offline completo está fora do escopo do projeto.
-- O acesso aos dois bancos fica isolado na camada de repositórios ([ADR-004](ADR-004-Arquitetura-em-camadas.md)): nenhuma tela sabe qual banco está sendo usado.
+- O acesso aos dois bancos fica isolado na camada de repositórios ([ADR-004](ADR%20004%20—%20Arquitetura%20em%20camadas.md)): nenhuma tela sabe qual banco está sendo usado.
 
 ### Fases de implementação
 
 | Fase | Situação | O que muda |
 |---|---|---|
 | **Entrega 2** (30/10) | Somente **SQLite**, como banco único | O enunciado da Entrega 2 exige apenas persistência local. O SQLite já é o banco definitivo do lado do aparelho, então nada é descartado depois |
-| **Entrega 3** (30/11) | SQLite passa a ser **cache** do Firestore | Só os repositórios mudam: passam a gravar no Firestore e a sincronizar ([ADR-003](ADR-003-Sincronização-dos-dados.md)) |
+| **Entrega 3** (30/11) | SQLite passa a ser **cache** do Firestore | Só os repositórios mudam: passam a gravar no Firestore e a sincronizar ([ADR-003](ADR%20003%20—%20Sincronização%20dos%20dados.md)) |
 
-As tabelas do SQLite seguem exatamente as coleções da [ADR-001](ADR-001-Modelagem-de-dados.md). A versão do esquema é controlada com `PRAGMA user_version`, para aplicar alterações de tabela sem apagar os dados do aparelho.
+As tabelas do SQLite seguem exatamente as coleções da [ADR-001](ADR%20001%20—%20Modelagem%20de%20dados.md). A versão do esquema é controlada com `PRAGMA user_version`, para aplicar alterações de tabela sem apagar os dados do aparelho.
 
 ## Consequências
 
