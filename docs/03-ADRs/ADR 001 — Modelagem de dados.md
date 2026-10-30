@@ -1,6 +1,6 @@
 # ADR 001 — Modelagem dos dados
 
-**Status:** Aceita · **Data:** 28/09 · **Revisada:** 30/10 (detalhamento das coleções, campos, identificadores e exclusão lógica)
+**Status:** Aceita · **Data:** 28/09 · **Revisada:** 28/10 (detalhamento das coleções, campos, identificadores e exclusão lógica)
 
 ## Resumo
 
